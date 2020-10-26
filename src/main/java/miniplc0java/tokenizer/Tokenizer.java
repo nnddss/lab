@@ -50,7 +50,7 @@ public class Tokenizer {
         // Token 的 Value 应填写数字的值
         //throw new Error("Not implemented");
         Pos startPos = new Pos(it.currentPos().row,it.currentPos().col);
-        String number=new String();
+        String number="";
         while(true){
             number+=it.nextChar();
             char peek=it.peekChar();
@@ -61,7 +61,7 @@ public class Tokenizer {
                 break;
             }
         }
-        int num = Integer.parseInt(number);
+        Integer num = Integer.parseInt(number);
         Pos endPos = new Pos(it.currentPos().row,it.currentPos().col);
         Token token=new Token(TokenType.Uint, num, startPos, endPos);
         return token;
