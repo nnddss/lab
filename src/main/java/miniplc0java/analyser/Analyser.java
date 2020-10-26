@@ -284,11 +284,10 @@ public final class Analyser {
                 // 调用相应的分析函数
                 analyseAssignmentStatement();
                 // 如果遇到其他非终结符的 FIRST 集呢？
-                expect(TokenType.Semicolon);
+                
             }
             else if(peeked.getTokenType() == TokenType.Print){
                 analyseOutputStatement();
-                expect(TokenType.Semicolon);
             }
             else if(peeked.getTokenType() == TokenType.Semicolon){
                 expect(TokenType.Semicolon);
