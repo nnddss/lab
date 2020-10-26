@@ -1,7 +1,8 @@
 package miniplc0java.tokenizer;
 
-import miniplc0java.error.TokenizeError;
 import miniplc0java.error.ErrorCode;
+import miniplc0java.error.TokenizeError;
+import miniplc0java.util.Pos;
 
 public class Tokenizer {
 
@@ -47,7 +48,23 @@ public class Tokenizer {
         // 解析成功则返回无符号整数类型的token，否则返回编译错误
         //
         // Token 的 Value 应填写数字的值
-        throw new Error("Not implemented");
+        //throw new Error("Not implemented");
+        Pos startPos = new Pos(it.currentPos().row,it.currentPos().col);
+        String number=new String();
+        while(true){
+            number+=it.nextChar();
+            char peek=it.peekChar();
+            if(Character.isDigit(peek)){
+                continue;
+            }
+            else{
+                break;
+            }
+        }
+        int num = Integer.parseInt(number);
+        Pos endPos = new Pos(it.currentPos().row,it.currentPos().col);
+        Token token=new Token(TokenType.Uint, num, startPos, endPos);
+        return token;
     }
 
     private Token lexIdentOrKeyword() throws TokenizeError {
@@ -60,7 +77,44 @@ public class Tokenizer {
         // -- 否则，返回标识符
         //
         // Token 的 Value 应填写标识符或关键字的字符串
-        throw new Error("Not implemented");
+        //throw new Error("Not implemented");
+        Pos startPos = new Pos(it.currentPos().row,it.currentPos().col);
+        String IdentOrKeyword=new String();
+        while(true){
+            IdentOrKeyword+=it.nextChar();
+            char peek=it.peekChar();
+            if(Character.isAlphabetic(peek)||Character.isDigit(peek)){
+                continue;
+            }
+            else{
+                break;
+            }
+        }
+        Pos endPos = new Pos(it.currentPos().row,it.currentPos().col);
+        if(IdentOrKeyword.compareTo("Var")==0){
+            Token token=new Token(TokenType.Var, 5, startPos, endPos);
+            return token;
+        }
+        else if(IdentOrKeyword.compareTo("Const")==0){
+            Token token=new Token(TokenType.Const, 6, startPos, endPos);
+            return token;
+        }
+        else if(IdentOrKeyword.compareTo("Begin")==0){
+            Token token=new Token(TokenType.Begin, 3, startPos, endPos);
+            return token;
+        }
+        else if(IdentOrKeyword.compareTo("End")==0){
+            Token token=new Token(TokenType.End, 4, startPos, endPos);
+            return token;
+        }
+        else if(IdentOrKeyword.compareTo("Print")==0){
+            Token token=new Token(TokenType.Print, 7, startPos, endPos);
+            return token;
+        }
+        else {
+            Token token=new Token(TokenType.Ident,IdentOrKeyword, startPos, endPos);
+            return token;
+        }
     }
 
     private Token lexOperatorOrUnknown() throws TokenizeError {
@@ -70,15 +124,34 @@ public class Tokenizer {
 
             case '-':
                 // 填入返回语句
-                throw new Error("Not implemented");
+                //throw new Error("Not implemented");
+                return new Token(TokenType.Minus, '-', it.previousPos(), it.currentPos());
 
             case '*':
                 // 填入返回语句
-                throw new Error("Not implemented");
+                //throw new Error("Not implemented");
+                return new Token(TokenType.Mult, '*', it.previousPos(), it.currentPos());
+
 
             case '/':
                 // 填入返回语句
-                throw new Error("Not implemented");
+                //throw new Error("Not implemented");
+                return new Token(TokenType.Div, '/', it.previousPos(), it.currentPos());
+
+            case '=':
+                // 填入返回语句
+                //throw new Error("Not implemented");
+                return new Token(TokenType.Equal, '=', it.previousPos(), it.currentPos());
+
+            case '(':
+                // 填入返回语句
+                //throw new Error("Not implemented");
+                return new Token(TokenType.LParen, '(', it.previousPos(), it.currentPos());
+
+            case ')':
+                // 填入返回语句
+                //throw new Error("Not implemented");
+                return new Token(TokenType.RParen, ')', it.previousPos(), it.currentPos());
 
             // 填入更多状态和返回语句
 
