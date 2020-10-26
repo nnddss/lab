@@ -324,7 +324,6 @@ public final class Analyser {
         // 表达式 -> 项 (加法运算符 项)*
         // 项
         analyseItem();
-
         while (true) {
             // 预读可能是运算符的 token
             var op = peek();
@@ -395,9 +394,10 @@ public final class Analyser {
         analyseFactor();
         while (true) {
             // 预读可能是运算符的 token
-            Token op = peek();
-            if(op.getTokenType()!=TokenType.Mult&&op.getTokenType()!=TokenType.Div)
+            var op = peek();
+            if(op.getTokenType()!=TokenType.Mult&&op.getTokenType()!=TokenType.Div){
                 break;
+            }
             // 运算符
             next();
             // 因子
