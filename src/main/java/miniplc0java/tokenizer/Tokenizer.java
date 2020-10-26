@@ -91,11 +91,11 @@ public class Tokenizer {
             }
         }
         Pos endPos = new Pos(it.currentPos().row,it.currentPos().col);
-        if(IdentOrKeyword.compareTo("Var")==0){
+        if(IdentOrKeyword.compareTo("var")==0){
             Token token=new Token(TokenType.Var, 5, startPos, endPos);
             return token;
         }
-        else if(IdentOrKeyword.compareTo("Const")==0){
+        else if(IdentOrKeyword.compareTo("const")==0){
             Token token=new Token(TokenType.Const, 6, startPos, endPos);
             return token;
         }
@@ -103,11 +103,11 @@ public class Tokenizer {
             Token token=new Token(TokenType.Begin, 3, startPos, endPos);
             return token;
         }
-        else if(IdentOrKeyword.compareTo("End")==0){
+        else if(IdentOrKeyword.compareTo("end")==0){
             Token token=new Token(TokenType.End, 4, startPos, endPos);
             return token;
         }
-        else if(IdentOrKeyword.compareTo("Print")==0){
+        else if(IdentOrKeyword.compareTo("print")==0){
             Token token=new Token(TokenType.Print, 7, startPos, endPos);
             return token;
         }
