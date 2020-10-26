@@ -50,18 +50,19 @@ public class Tokenizer {
         // Token 的 Value 应填写数字的值
         //throw new Error("Not implemented");
         Pos startPos = new Pos(it.currentPos().row,it.currentPos().col);
-        String number="";
+        StringBuffer number=new StringBuffer();
+        number.append(it.nextChar());
         while(true){
             char peek=it.peekChar();
             if(Character.isDigit(peek)){
-                number+=it.nextChar();
+                number.append(it.nextChar());
                 continue;
             }
             else{
                 break;
             }
         }
-        Integer num = Integer.parseInt(number);
+        Integer num = Integer.parseInt(number.toString());
         Pos endPos = new Pos(it.currentPos().row,it.currentPos().col);
         Token token=new Token(TokenType.Uint, num, startPos, endPos);
         return token;
