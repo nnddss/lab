@@ -54,9 +54,9 @@ public class Tokenizer {
         char peek=it.peekChar();
         number.append(it.nextChar());
         while(Character.isDigit(peek)){
+            number.append(it.nextChar());
             peek=it.peekChar();
             if(Character.isDigit(peek)){
-                number.append(it.nextChar());
                 continue;
             }
             else{
