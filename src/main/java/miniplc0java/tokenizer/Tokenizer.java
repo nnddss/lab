@@ -99,7 +99,7 @@ public class Tokenizer {
             Token token=new Token(TokenType.Const, 6, startPos, endPos);
             return token;
         }
-        else if(IdentOrKeyword.compareTo("Begin")==0){
+        else if(IdentOrKeyword.compareTo("begin")==0){
             Token token=new Token(TokenType.Begin, 3, startPos, endPos);
             return token;
         }
