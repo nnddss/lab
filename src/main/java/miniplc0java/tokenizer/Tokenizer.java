@@ -92,23 +92,23 @@ public class Tokenizer {
         }
         Pos endPos = new Pos(it.currentPos().row,it.currentPos().col);
         if(IdentOrKeyword.toLowerCase().compareTo("var")==0){
-            Token token=new Token(TokenType.Var, 5, startPos, endPos);
+            Token token=new Token(TokenType.Var, "var", startPos, endPos);
             return token;
         }
         else if(IdentOrKeyword.toLowerCase().compareTo("const")==0){
-            Token token=new Token(TokenType.Const, 6, startPos, endPos);
+            Token token=new Token(TokenType.Const, "const", startPos, endPos);
             return token;
         }
         else if(IdentOrKeyword.toLowerCase().compareTo("begin")==0){
-            Token token=new Token(TokenType.Begin, 3, startPos, endPos);
+            Token token=new Token(TokenType.Begin, "begin", startPos, endPos);
             return token;
         }
         else if(IdentOrKeyword.toLowerCase().compareTo("end")==0){
-            Token token=new Token(TokenType.End, 4, startPos, endPos);
+            Token token=new Token(TokenType.End, "end", startPos, endPos);
             return token;
         }
         else if(IdentOrKeyword.toLowerCase().compareTo("print")==0){
-            Token token=new Token(TokenType.Print, 7, startPos, endPos);
+            Token token=new Token(TokenType.Print, "print", startPos, endPos);
             return token;
         }
         else {
