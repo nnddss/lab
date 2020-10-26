@@ -152,7 +152,10 @@ public class Tokenizer {
                 // 填入返回语句
                 //throw new Error("Not implemented");
                 return new Token(TokenType.RParen, ')', it.previousPos(), it.currentPos());
-
+            case ';':
+                // 填入返回语句
+                //throw new Error("Not implemented");
+                return new Token(TokenType.Semicolon, ';', it.previousPos(), it.currentPos());
             // 填入更多状态和返回语句
 
             default:
