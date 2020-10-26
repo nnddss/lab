@@ -52,8 +52,8 @@ public class Tokenizer {
         Pos startPos = new Pos(it.currentPos().row,it.currentPos().col);
         StringBuffer number=new StringBuffer();
         char peek=it.peekChar();
-        number.append(it.nextChar());
-        while(Character.isDigit(peek)){
+
+        while(true){
             number.append(it.nextChar());
             peek=it.peekChar();
             if(Character.isDigit(peek)){

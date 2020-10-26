@@ -442,7 +442,7 @@ public final class Analyser {
         } else if (check(TokenType.Uint)) {
             // 是整数
             // 加载整数值
-            int value = 0;
+            int value = (int)expect(TokenType.Uint).getValue();
             instructions.add(new Instruction(Operation.LIT, value));
         } else if (check(TokenType.LParen)) {
             // 是表达式
