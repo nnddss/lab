@@ -394,7 +394,7 @@ public final class Analyser {
         analyseFactor();
         while (true) {
             // 预读可能是运算符的 token
-            Token op = null;
+            Token op = peek();
 
             // 运算符
             next();
