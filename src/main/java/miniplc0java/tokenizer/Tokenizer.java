@@ -59,6 +59,7 @@ public class Tokenizer {
                 continue;
             }
             else{
+                number.append(it.nextChar());
                 break;
             }
         }
