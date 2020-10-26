@@ -51,17 +51,11 @@ public class Tokenizer {
         //throw new Error("Not implemented");
         Pos startPos = new Pos(it.currentPos().row,it.currentPos().col);
         StringBuffer number=new StringBuffer();
+        char peek=it.peekChar();
         number.append(it.nextChar());
-        while(true){
-            char peek=it.peekChar();
-            if(Character.isDigit(peek)){
+        while(Character.isDigit(peek)){
                 number.append(it.nextChar());
                 continue;
-            }
-            else{
-                number.append(it.nextChar());
-                break;
-            }
         }
         Integer num = Integer.parseInt(number.toString());
         Pos endPos = new Pos(it.currentPos().row,it.currentPos().col);
