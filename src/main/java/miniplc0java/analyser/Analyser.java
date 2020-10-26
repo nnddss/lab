@@ -284,7 +284,7 @@ public final class Analyser {
                 // 调用相应的分析函数
                 analyseAssignmentStatement();
                 // 如果遇到其他非终结符的 FIRST 集呢？
-                
+
             }
             else if(peeked.getTokenType() == TokenType.Print){
                 analyseOutputStatement();
@@ -446,6 +446,7 @@ public final class Analyser {
         } else if (check(TokenType.LParen)) {
             // 是表达式
             // 调用相应的处理函数
+            next();
             analyseExpression();
             expect(TokenType.RParen);
         } else {
