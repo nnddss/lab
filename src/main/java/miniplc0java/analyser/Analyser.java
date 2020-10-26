@@ -295,7 +295,6 @@ public final class Analyser {
             }
             else{
                 // 都不是，摸了
-
                 break;
             }
         }
@@ -357,7 +356,7 @@ public final class Analyser {
         analyseExpression();
         expect(TokenType.Semicolon);
         // 标识符是什么？
-        String name = null;
+        String name = Ident.getValueString();
         var symbol = symbolTable.get(name);
         if (symbol == null) {
             // 没有这个标识符
