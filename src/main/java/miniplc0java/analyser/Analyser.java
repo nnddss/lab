@@ -202,7 +202,10 @@ public final class Analyser {
 
     private void analyseMain() throws CompileError {
         // 主过程 -> 常量声明 变量声明 语句序列
-        throw new Error("Not implemented");
+        //throw new Error("Not implemented");
+        analyseConstantDeclaration();
+        analyseVariableDeclaration();
+        analyseStatementSequence();
     }
 
     private void analyseConstantDeclaration() throws CompileError {
@@ -244,20 +247,24 @@ public final class Analyser {
             // 变量声明语句 -> 'var' 变量名 ('=' 表达式)? ';'
 
             // 变量名
-
+            var nameToken = expect(TokenType.Ident);
             // 变量初始化了吗
             boolean initialized = false;
 
             // 下个 token 是等于号吗？如果是的话分析初始化
-
-            // 分析初始化的表达式
+            if(check(TokenType.Equal)){
+                expect(TokenType.Equal);
+                // 分析初始化的表达式
+                analyseExpression();
+                initialized = true;
+            }
 
             // 分号
             expect(TokenType.Semicolon);
 
             // 加入符号表，请填写名字和当前位置（报错用）
-            String name = /* 名字 */ null;
-            addSymbol(name, false, false, /* 当前位置 */ null);
+            String name = /* 名字 */ (String) nameToken.getValue();;
+            addSymbol(name, initialized, false, /* 当前位置 */  nameToken.getStartPos());
 
             // 如果没有初始化的话在栈里推入一个初始值
             if (!initialized) {
@@ -275,13 +282,24 @@ public final class Analyser {
             var peeked = peek();
             if (peeked.getTokenType() == TokenType.Ident) {
                 // 调用相应的分析函数
+                analyseAssignmentStatement();
                 // 如果遇到其他非终结符的 FIRST 集呢？
-            } else {
+                expect(TokenType.Semicolon);
+            }
+            else if(peeked.getTokenType() == TokenType.Print){
+                analyseOutputStatement();
+                expect(TokenType.Semicolon);
+            }
+            else if(peeked.getTokenType() == TokenType.Semicolon){
+                expect(TokenType.Semicolon);
+            }
+            else{
                 // 都不是，摸了
+
                 break;
             }
         }
-        throw new Error("Not implemented");
+        //throw new Error("Not implemented");
     }
 
     private int analyseConstantExpression() throws CompileError {
@@ -371,15 +389,15 @@ public final class Analyser {
         // 项 -> 因子 (乘法运算符 因子)*
 
         // 因子
-
+        analyseFactor();
         while (true) {
             // 预读可能是运算符的 token
             Token op = null;
 
             // 运算符
-
+            next();
             // 因子
-
+            analyseFactor();
             // 生成代码
             if (op.getTokenType() == TokenType.Mult) {
                 instructions.add(new Instruction(Operation.MUL));
