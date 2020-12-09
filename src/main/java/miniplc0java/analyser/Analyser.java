@@ -39,7 +39,10 @@ public final class Analyser {
         this.tokenizer = tokenizer;
         this.instructions = new ArrayList<>();
     }
-
+    public List<Instruction> analyse() throws CompileError {
+        analyseProgram();
+        return instructions;
+    }
 //    public List<Instruction> analyse() throws CompileError {
 //        analyseProgram();
 //        return instructions;
