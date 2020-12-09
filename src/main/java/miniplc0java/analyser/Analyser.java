@@ -565,7 +565,7 @@ public final class Analyser {
               nextIf(TokenType.Minus)!=null||
               nextIf(TokenType.Div)!=null||
               nextIf(TokenType.Mult)!=null||
-              nextIf(TokenType.Equal)!=null||
+              nextIf(TokenType.ASSIGN)!=null||
               nextIf(TokenType.NEQ)!=null||
               nextIf(TokenType.LE)!=null||
               nextIf(TokenType.LT)!=null||
