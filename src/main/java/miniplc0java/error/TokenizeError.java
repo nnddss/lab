@@ -21,6 +21,7 @@ public class TokenizeError extends CompileError {
         this.pos = new Pos(row, col);
     }
 
+
     public ErrorCode getErr() {
         return err;
     }

@@ -1,19 +1,49 @@
 package miniplc0java.analyser;
 
-public class SymbolEntry {
-    boolean isConstant;
-    boolean isInitialized;
-    int stackOffset;
+import miniplc0java.tokenizer.TokenType;
+import miniplc0java.util.Pos;
 
+import java.util.ArrayList;
+import java.util.List;
+
+public class SymbolEntry {
+    boolean isConstant=false;
+    boolean isInitialized=false;
+    boolean isFunction=false;
+    int stackOffset;
+    String tokenType;
+    Pos pos;
+    int parameterCount;
+    List<String> parameterList= new ArrayList<>();
     /**
      * @param isConstant
      * @param isDeclared
      * @param stackOffset
      */
-    public SymbolEntry(boolean isConstant, boolean isDeclared, int stackOffset) {
+    public SymbolEntry(boolean isConstant, boolean isDeclared,boolean isFunction, int stackOffset, String tokenType, Pos pos) {
         this.isConstant = isConstant;
         this.isInitialized = isDeclared;
+        this.isFunction =isFunction;
         this.stackOffset = stackOffset;
+        this.tokenType = tokenType;
+        this.pos = pos;
+    }
+    public SymbolEntry(boolean isDeclared,boolean isFunction, int stackOffset, String tokenType, Pos pos,int parameterCount,List parameterList) {
+        this.isConstant = isConstant;
+        this.isInitialized = isDeclared;
+        this.isFunction =isFunction;
+        this.stackOffset = stackOffset;
+        this.tokenType = tokenType;
+        this.pos = pos;
+        this.parameterCount=parameterCount;
+        this.parameterList=parameterList;
+    }
+    public String getTokenType() {
+        return tokenType;
+    }
+
+    public void setTokenType(String tokenType) {
+        this.tokenType = tokenType;
     }
 
     /**

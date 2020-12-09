@@ -4,6 +4,9 @@ import miniplc0java.error.ErrorCode;
 import miniplc0java.error.TokenizeError;
 import miniplc0java.util.Pos;
 
+import static miniplc0java.error.ErrorCode.ExpectedApostrophe;
+import static miniplc0java.error.ErrorCode.IllegalEscapeCharacter;
+
 public class Tokenizer {
 
     private StringIter it;
@@ -31,15 +34,19 @@ public class Tokenizer {
 
         char peek = it.peekChar();
         if (Character.isDigit(peek)) {
-            return lexUInt();
-        } else if (Character.isAlphabetic(peek)) {
+            return lexUIntOrDouble();
+        }else if (peek=='\'') {
+            return lexChar();
+        }else if (peek=='\"') {
+            return lexString();
+        }else if (Character.isAlphabetic(peek)) {
             return lexIdentOrKeyword();
-        } else {
+        }else {
             return lexOperatorOrUnknown();
         }
     }
 
-    private Token lexUInt() throws TokenizeError {
+    private Token lexUIntOrDouble() throws TokenizeError {
         // 请填空：
         // 直到查看下一个字符不是数字为止:
         // -- 前进一个字符，并存储这个字符
@@ -52,20 +59,122 @@ public class Tokenizer {
         Pos startPos = new Pos(it.currentPos().row,it.currentPos().col);
         StringBuffer number=new StringBuffer();
         char peek=it.peekChar();
-
+        boolean isDouble=false;
         while(true){
             number.append(it.nextChar());
             peek=it.peekChar();
-            if(Character.isDigit(peek)){
+            if(Character.isDigit(peek)||peek=='e'||peek=='E'||peek=='+'||peek=='-'){
                 continue;
             }
-            else{
+            else if(peek=='.'){
+                isDouble=true;
+            }
+            else {
                 break;
             }
         }
-        Integer num = Integer.parseInt(number.toString());
+        try {
+            if(isDouble){
+                Integer num = Integer.parseInt(number.toString());
+                Pos endPos = new Pos(it.currentPos().row,it.currentPos().col);
+                Token token=new Token(TokenType.Uint, num, startPos, endPos);
+                return token;
+            }
+            else{
+                Double num =Double.parseDouble(number.toString());
+                Pos endPos = new Pos(it.currentPos().row,it.currentPos().col);
+                Token token=new Token(TokenType.Double, num, startPos, endPos);
+                return token;
+            }
+        }
+        catch (NumberFormatException numberFormatException){
+            throw numberFormatException;
+        }
+
+
+
+    }
+    private Token lexString() throws TokenizeError {
+        // 请填空：
+        // 直到查看下一个字符不是数字为止:
+        // -- 前进一个字符，并存储这个字符
+        //
+        // 解析存储的字符串为无符号整数
+        // 解析成功则返回无符号整数类型的token，否则返回编译错误
+        //
+        // Token 的 Value 应填写数字的值
+        //throw new Error("Not implemented");
+        Pos startPos = new Pos(it.currentPos().row,it.currentPos().col);
+        StringBuffer stringBuffer=new StringBuffer();
+        char now;
+        boolean isEscape = false;
+        while(true){
+            now=it.nextChar();
+            if(isEscape==true){
+                isEscape=false;
+                switch (now){
+                    case 'n': now='\n';break;
+                    case '\'': now='\'';break;
+                    case '\"': now='\"';break;
+                    case '\\': now='\\';break;
+                    case 'r': now='\r';break;
+                    case 't': now='\t';break;
+                    default:throw new TokenizeError(IllegalEscapeCharacter, it.currentPos());
+                }
+            }
+            else if(now=='\\'){
+                isEscape=true;
+                continue;
+            }
+            if(now=='\"'&&isEscape==false){
+                break;
+            }
+            else{
+                stringBuffer.append(now);
+            }
+        }
+
         Pos endPos = new Pos(it.currentPos().row,it.currentPos().col);
-        Token token=new Token(TokenType.Uint, num, startPos, endPos);
+        Token token=new Token(TokenType.String,stringBuffer, startPos, endPos);
+        return token;
+    }
+    private Token lexChar() throws TokenizeError {
+        // 请填空：
+        // 直到查看下一个字符不是数字为止:
+        // -- 前进一个字符，并存储这个字符
+        //
+        // 解析存储的字符串为无符号整数
+        // 解析成功则返回无符号整数类型的token，否则返回编译错误
+        //
+        // Token 的 Value 应填写数字的值
+        //throw new Error("Not implemented");
+        Pos startPos = new Pos(it.currentPos().row,it.currentPos().col);
+        char c;
+        char now;
+        boolean isEscape=false;
+        now=it.nextChar();
+        if(now=='\\'){
+            now=it.nextChar();
+            switch (now){
+                case 'n': c='\n';break;
+                case '\'': c='\'';break;
+                case '\"': c='\"';break;
+                case '\\': c='\\';break;
+                case 'r': c='\r';break;
+                case 't': c='\t';break;
+                default:throw new TokenizeError(IllegalEscapeCharacter, it.currentPos());
+            }
+        }
+        else if(now!='\''&&now!='\"')
+            c=now;
+        else {
+           throw new TokenizeError(IllegalEscapeCharacter, it.currentPos());
+        }
+        now=it.nextChar();
+        if(now!='\'')
+            throw new TokenizeError(ExpectedApostrophe, it.currentPos());
+        Pos endPos = new Pos(it.currentPos().row,it.currentPos().col);
+        Token token=new Token(TokenType.Char,c, startPos, endPos);
         return token;
     }
 
@@ -85,7 +194,7 @@ public class Tokenizer {
         while(true){
             IdentOrKeyword+=it.nextChar();
             char peek=it.peekChar();
-            if(Character.isAlphabetic(peek)||Character.isDigit(peek)){
+            if(Character.isAlphabetic(peek)||Character.isDigit(peek)||peek=='_'){
                 continue;
             }
             else{
@@ -93,24 +202,56 @@ public class Tokenizer {
             }
         }
         Pos endPos = new Pos(it.currentPos().row,it.currentPos().col);
-        if(IdentOrKeyword.compareTo("var")==0){
-            Token token=new Token(TokenType.Var, "var", startPos, endPos);
+        if(IdentOrKeyword.compareTo("fn")==0){
+            Token token=new Token(TokenType.FN_KW, "fn", startPos, endPos);
             return token;
         }
         else if(IdentOrKeyword.compareTo("const")==0){
-            Token token=new Token(TokenType.Const, "const", startPos, endPos);
+            Token token=new Token(TokenType.CONST_KW, "const", startPos, endPos);
             return token;
         }
-        else if(IdentOrKeyword.compareTo("begin")==0){
-            Token token=new Token(TokenType.Begin, "begin", startPos, endPos);
+        else if(IdentOrKeyword.compareTo("let")==0){
+            Token token=new Token(TokenType.LET_KW, "let", startPos, endPos);
             return token;
         }
-        else if(IdentOrKeyword.compareTo("end")==0){
-            Token token=new Token(TokenType.End, "end", startPos, endPos);
+        else if(IdentOrKeyword.compareTo("as")==0){
+            Token token=new Token(TokenType.AS_KW, "as", startPos, endPos);
             return token;
         }
-        else if(IdentOrKeyword.compareTo("print")==0){
-            Token token=new Token(TokenType.Print, "print", startPos, endPos);
+        else if(IdentOrKeyword.compareTo("while")==0){
+            Token token=new Token(TokenType.WHILE_KW, "while", startPos, endPos);
+            return token;
+        }
+        else if(IdentOrKeyword.compareTo("if")==0){
+            Token token=new Token(TokenType.IF_KW, "if", startPos, endPos);
+            return token;
+        }
+        else if(IdentOrKeyword.compareTo("else")==0){
+            Token token=new Token(TokenType.ELSE_KW, "else", startPos, endPos);
+            return token;
+        }
+        else if(IdentOrKeyword.compareTo("return")==0){
+            Token token=new Token(TokenType.RETURN_KW, "return", startPos, endPos);
+            return token;
+        }
+        else if(IdentOrKeyword.compareTo("break")==0){
+            Token token=new Token(TokenType.BREAK_KW, "break", startPos, endPos);
+            return token;
+        }
+        else if(IdentOrKeyword.compareTo("continue")==0){
+            Token token=new Token(TokenType.CONTINUE_KW, "continue", startPos, endPos);
+            return token;
+        }
+        else if(IdentOrKeyword.compareTo("int")==0){
+            Token token=new Token(TokenType.TYPE, "int", startPos, endPos);
+            return token;
+        }
+        else if(IdentOrKeyword.compareTo("double")==0){
+            Token token=new Token(TokenType.TYPE, "double", startPos, endPos);
+            return token;
+        }
+        else if(IdentOrKeyword.compareTo("void")==0){
+            Token token=new Token(TokenType.TYPE, "void", startPos, endPos);
             return token;
         }
         else {
@@ -127,6 +268,10 @@ public class Tokenizer {
             case '-':
                 // 填入返回语句
                 //throw new Error("Not implemented");
+                if(it.peekChar()=='>'){
+                    it.nextChar();
+                    return new Token(TokenType.ARROW, "->", it.previousPos(), it.currentPos());
+                }
                 return new Token(TokenType.Minus, '-', it.previousPos(), it.currentPos());
 
             case '*':
@@ -143,7 +288,11 @@ public class Tokenizer {
             case '=':
                 // 填入返回语句
                 //throw new Error("Not implemented");
-                return new Token(TokenType.Equal, '=', it.previousPos(), it.currentPos());
+                if(it.peekChar()=='='){
+                    it.nextChar();
+                    return new Token(TokenType.Equal, "==", it.previousPos(), it.currentPos());
+                }
+                return new Token(TokenType.ASSIGN, '=', it.previousPos(), it.currentPos());
 
             case '(':
                 // 填入返回语句
@@ -154,11 +303,46 @@ public class Tokenizer {
                 // 填入返回语句
                 //throw new Error("Not implemented");
                 return new Token(TokenType.RParen, ')', it.previousPos(), it.currentPos());
-            case ';':
+            case '>':
                 // 填入返回语句
                 //throw new Error("Not implemented");
-                return new Token(TokenType.Semicolon, ';', it.previousPos(), it.currentPos());
-            // 填入更多状态和返回语句
+                if(it.peekChar()=='='){
+                    it.nextChar();
+                    return new Token(TokenType.GE, ">=", it.previousPos(), it.currentPos());
+                }
+                return new Token(TokenType.GT, '>', it.previousPos(), it.currentPos());
+            case '<':
+                // 填入返回语句
+                //throw new Error("Not implemented");
+                if(it.peekChar()=='='){
+                    it.nextChar();
+                    return new Token(TokenType.LE, "<=", it.previousPos(), it.currentPos());
+                }
+                return new Token(TokenType.LT, '<', it.previousPos(), it.currentPos());
+            case '{':
+                // 填入返回语句
+                //throw new Error("Not implemented");
+                return new Token(TokenType.L_BRACE, '{', it.previousPos(), it.currentPos());
+            case '}':
+                // 填入返回语句
+                //throw new Error("Not implemented");
+                return new Token(TokenType.R_BRACE, '}', it.previousPos(), it.currentPos());
+            case ',':
+                // 填入返回语句
+                //throw new Error("Not implemented");
+                return new Token(TokenType.COMMA, ',', it.previousPos(), it.currentPos());
+            case ':':
+                // 填入返回语句
+                //throw new Error("Not implemented");
+                return new Token(TokenType.COLON, ':', it.previousPos(), it.currentPos());
+            case '!':
+                // 填入返回语句
+                //throw new Error("Not implemented");
+                if(it.peekChar()=='='){
+                    it.nextChar();
+                    return new Token(TokenType.NEQ, "!=", it.previousPos(), it.currentPos());
+                }
+                // 填入更多状态和返回语句
 
             default:
                 // 不认识这个输入，摸了
