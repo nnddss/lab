@@ -161,6 +161,9 @@ public final class Analyser {
             if(symbolTable.containsKey(token.getValueString())&&!symbolTable.get(token.getValueString()).isConstant){
                 return;
             }
+            else if(symbolTable.containsKey(token.getValueString())&&symbolTable.get(token.getValueString()).isConstant){
+                throw new AnalyzeError(ErrorCode.AssignToConstant, token.getStartPos());
+            }
         }
         throw new AnalyzeError(ErrorCode.NotDeclared, token.getStartPos());
     }
@@ -581,12 +584,13 @@ public final class Analyser {
         analyseExpr();
     }
     private void analyseAssign_ExprOrIdent_ExprOrCall_Expr() throws CompileError {
-
-        peekedToken=peek();
-        if (nextIf(TokenType.Equal) != null) {
-            analyseAssign_Expr();
+        Token Ident=next();
+        if (nextIf(TokenType.Equal) != null) {//赋值表达式
+            searchGlobalNotConst(Ident);
+            analyseExpr();
         }
-        else if(nextIf(TokenType.LParen) != null) {
+        else if(nextIf(TokenType.LParen) != null) {//函数调用
+            searchFunction(Ident);
             analyseCall_Expr();
         }
         else {
@@ -594,18 +598,10 @@ public final class Analyser {
         }
 
     }
-    private void analyseAssign_Expr() throws CompileError {
-        searchGlobalNotConst(expect(TokenType.Ident));
-        expect(TokenType.ASSIGN);
-        analyseExpr();
-    }
-    private void analyseCall_Expr() throws CompileError {
 
-        searchFunction(expect(TokenType.Ident));
-        expect(TokenType.LParen);
+    private void analyseCall_Expr() throws CompileError {
         analyseCallParamList();
         expect(TokenType.RParen);
-
     }
     private void analyseCallParamList() throws CompileError {
         analyseExpr();
@@ -687,7 +683,7 @@ public final class Analyser {
             }
             expect(TokenType.Semicolon);
         }
-        if(nextIf(TokenType.CONST_KW)!=null){
+        else if(nextIf(TokenType.CONST_KW)!=null){
             expect(TokenType.CONST_KW);
             token=expect(TokenType.Ident);
             defineIdent(token,true);
