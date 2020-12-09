@@ -585,7 +585,7 @@ public final class Analyser {
     }
     private void analyseAssign_ExprOrIdent_ExprOrCall_Expr() throws CompileError {
         Token Ident=expect(TokenType.Ident);
-        if (nextIf(TokenType.Equal) != null) {//赋值表达式
+        if (nextIf(TokenType.ASSIGN) != null) {//赋值表达式
             searchGlobalNotConst(Ident);
             analyseExpr();
         }
