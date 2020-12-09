@@ -153,6 +153,17 @@ public final class Analyser {
             throw new AnalyzeError(ErrorCode.NotDeclared, token.getStartPos());
         }
     }
+    private void searchGlobalNotConst(Token token) throws CompileError {
+        //boolean isConstant, boolean isDeclared, int stackOffset,
+        // TokenType tokenType, Pos pos
+        for(int i=listLength;i>=0;i--){
+            HashMap<String, SymbolEntry> symbolTable = symbolTableList.get(i);
+            if(symbolTable.containsKey(token.getValueString())&&!symbolTable.get(token.getValueString()).isConstant){
+                return;
+            }
+        }
+        throw new AnalyzeError(ErrorCode.NotDeclared, token.getStartPos());
+    }
     private void searchGlobal(Token token) throws CompileError {
         //boolean isConstant, boolean isDeclared, int stackOffset,
         // TokenType tokenType, Pos pos
@@ -584,7 +595,7 @@ public final class Analyser {
 
     }
     private void analyseAssign_Expr() throws CompileError {
-        searchGlobal(expect(TokenType.Ident));
+        searchGlobalNotConst(expect(TokenType.Ident));
         expect(TokenType.ASSIGN);
         analyseExpr();
     }
