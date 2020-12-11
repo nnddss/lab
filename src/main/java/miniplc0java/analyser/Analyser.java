@@ -15,11 +15,11 @@ import miniplc0java.util.Pos;
 import java.lang.instrument.Instrumentation;
 import java.util.*;
 
-public final class Analyser {
+import static javax.swing.text.StyleConstants.Size;
 
+public final class Analyser {
     Tokenizer tokenizer;
     ArrayList<Instruction> instructions;
-    Instrumentation instrumentation;
     /** 当前偷看的 token */
     Token peekedToken = null;
     boolean inFunction=false;
@@ -28,12 +28,13 @@ public final class Analyser {
     //这样在进入block时不在创建局部符号表，
     //并将其置为false
     /** 符号表 */
-    HashMap<String, SymbolEntry> symbolTable = new HashMap<>();
+    HashMap<String, SymbolEntry> symbolTable;
     /** 符号表集 */
-    List<HashMap<String,SymbolEntry>> symbolTableList = new ArrayList<>();
-    int listLength=0;
+    List<HashMap<String,SymbolEntry>> symbolTableList;
+
+    int listLength;
     /** 下一个变量的栈偏移 */
-    int nextOffset = 0;
+    int nextOffset ;
 
     public Analyser(Tokenizer tokenizer) {
         this.tokenizer = tokenizer;
@@ -116,7 +117,7 @@ public final class Analyser {
         if(symbolTable.containsKey(token.getValueString())==false){
             SymbolEntry symbolEntry=new SymbolEntry(isConstant,true,false,
                     nextOffset,token.getValueString(),tokenType,token.getStartPos());
-            nextOffset= (int) (nextOffset+ instrumentation.getObjectSize(token.getValue()));
+            //nextOffset= (int) (nextOffset+ token.getValue());
             symbolTable.put(token.getValueString(),symbolEntry);
         }
         else {
@@ -130,7 +131,7 @@ public final class Analyser {
         if(symbolTable.containsKey(token.getValueString())==false){
             SymbolEntry symbolEntry=new SymbolEntry(true,true,
                     nextOffset,token.getValueString(),tokenType,token.getStartPos(),parameterCount,parameterList);
-            nextOffset= (int) (nextOffset+ instrumentation.getObjectSize(token.getValue()));
+            //nextOffset= (int) (nextOffset+ instrumentation.getObjectSize(token.getValue()));
             symbolTable.put(token.getValueString(),symbolEntry);
         }
         else {
@@ -725,6 +726,8 @@ public final class Analyser {
             tokenType = TokenType.Uint;
         else if (type.getValueString().compareTo("double") == 0)
             tokenType = TokenType.Double;
+        else if(type.getValueString().compareTo("void") == 0)
+            tokenType = TokenType.VOID;
         else
             throw new AnalyzeError(ErrorCode.NeedUintOrDouble, /* 当前位置 */ peekedToken.getStartPos());
         return tokenType;
@@ -785,7 +788,10 @@ public final class Analyser {
         expect(TokenType.FN_KW);
         token=expect(TokenType.Ident);
         expect(TokenType.LParen);
-        List<TokenType> parameterList=analyseFunctionParamList();
+        List<TokenType> parameterList=new ArrayList<>();
+
+        if(peek().getTokenType()==TokenType.Ident)
+            parameterList=analyseFunctionParamList();
         expect(TokenType.RParen);
         expect(TokenType.ARROW);
         type=expect(TokenType.TYPE);
@@ -816,6 +822,15 @@ public final class Analyser {
     }
     private void analyseProgram() throws CompileError {
         //program -> decl_stmt* function*
+        /** 符号表 */
+         symbolTable = new HashMap<>();
+        /** 符号表集 */
+         symbolTableList = new ArrayList<>();
+         symbolTableList.add(symbolTable);
+         listLength=0;
+
+        /** 下一个变量的栈偏移 */
+         nextOffset = 0;
         peekedToken=peek();
         while (peekedToken.getTokenType()==TokenType.LET_KW||
                 peekedToken.getTokenType()==TokenType.FN_KW){
