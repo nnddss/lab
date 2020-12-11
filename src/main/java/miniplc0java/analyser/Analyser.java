@@ -108,13 +108,14 @@ public final class Analyser {
     /**
      * 如果该标识符未定义，则定义，否则抛出异常
      */
-    private void defineIdent(Token token,boolean isConstant) throws CompileError {
+    private void defineIdent(Token token,boolean isConstant,TokenType tokenType) throws CompileError {
         //boolean isConstant, boolean isDeclared, int stackOffset,
         // TokenType tokenType, Pos pos
+
         HashMap<String, SymbolEntry> symbolTable = symbolTableList.get(listLength);
         if(symbolTable.containsKey(token.getValueString())==false){
             SymbolEntry symbolEntry=new SymbolEntry(isConstant,true,false,
-                    nextOffset,token.getTokenType().toString(),token.getStartPos());
+                    nextOffset,tokenType,token.getStartPos());
             nextOffset= (int) (nextOffset+ instrumentation.getObjectSize(token.getValue()));
             symbolTable.put(token.getValueString(),symbolEntry);
         }
@@ -122,13 +123,13 @@ public final class Analyser {
             throw new AnalyzeError(ErrorCode.DuplicateDeclaration, token.getStartPos());
         }
     }
-    private void defineFunction(Token token,Token type,int parameterCount,List parameterList) throws CompileError {
+    private void defineFunction(Token token,TokenType tokenType,int parameterCount,List parameterList) throws CompileError {
         //boolean isConstant, boolean isDeclared, int stackOffset,
         // TokenType tokenType, Pos pos
         HashMap<String, SymbolEntry> symbolTable = symbolTableList.get(0);
         if(symbolTable.containsKey(token.getValueString())==false){
             SymbolEntry symbolEntry=new SymbolEntry(true,true,
-                    nextOffset,type.getTokenType().toString(),token.getStartPos(),parameterCount,parameterList);
+                    nextOffset,tokenType,token.getStartPos(),parameterCount,parameterList);
             nextOffset= (int) (nextOffset+ instrumentation.getObjectSize(token.getValue()));
             symbolTable.put(token.getValueString(),symbolEntry);
         }
@@ -136,30 +137,23 @@ public final class Analyser {
             throw new AnalyzeError(ErrorCode.DuplicateDeclaration, token.getStartPos());
         }
     }
-
-    private void searchLocal(Token token) throws CompileError {
-        //boolean isConstant, boolean isDeclared, int stackOffset,
-        // TokenType tokenType, Pos pos
-        HashMap<String, SymbolEntry> symbolTable = symbolTableList.get(listLength);
-        if(symbolTable.containsKey(token.getValueString())==false){
-            throw new AnalyzeError(ErrorCode.NotDeclared, token.getStartPos());
-        }
-    }
-    private void searchFunction(Token token) throws CompileError {
+    private TokenType searchFunction(Token token) throws CompileError {
         //boolean isConstant, boolean isDeclared, int stackOffset,
         // TokenType tokenType, Pos pos
         HashMap<String, SymbolEntry> symbolTable = symbolTableList.get(0);
         if(symbolTable.containsKey(token.getValueString())==false){
             throw new AnalyzeError(ErrorCode.NotDeclared, token.getStartPos());
         }
+        else
+            return symbolTable.get(token.getValueString()).getTokenType();
     }
-    private void searchGlobalNotConst(Token token) throws CompileError {
+    private TokenType searchGlobalNotConst(Token token) throws CompileError {
         //boolean isConstant, boolean isDeclared, int stackOffset,
         // TokenType tokenType, Pos pos
         for(int i=listLength;i>=0;i--){
             HashMap<String, SymbolEntry> symbolTable = symbolTableList.get(i);
             if(symbolTable.containsKey(token.getValueString())&&!symbolTable.get(token.getValueString()).isConstant){
-                return;
+                return symbolTable.get(token.getValueString()).getTokenType();
             }
             else if(symbolTable.containsKey(token.getValueString())&&symbolTable.get(token.getValueString()).isConstant){
                 throw new AnalyzeError(ErrorCode.AssignToConstant, token.getStartPos());
@@ -167,13 +161,13 @@ public final class Analyser {
         }
         throw new AnalyzeError(ErrorCode.NotDeclared, token.getStartPos());
     }
-    private void searchGlobal(Token token) throws CompileError {
+    private TokenType searchGlobal(Token token) throws CompileError {
         //boolean isConstant, boolean isDeclared, int stackOffset,
         // TokenType tokenType, Pos pos
         for(int i=listLength;i>=0;i--){
             HashMap<String, SymbolEntry> symbolTable = symbolTableList.get(i);
             if(symbolTable.containsKey(token.getValueString())){
-                return;
+                return symbolTable.get(token.getValueString()).getTokenType();
             }
         }
         throw new AnalyzeError(ErrorCode.NotDeclared, token.getStartPos());
@@ -542,23 +536,28 @@ public final class Analyser {
 //        }
 //        //throw new Error("Not implemented");
 //    }
-    private void analyseExpr() throws CompileError {
+    private TokenType analyseExpr() throws CompileError {
         // 表达式 -> 运算符表达式|取反|赋值|类型转换|call|字面量|标识符|括号
+        TokenType tokenType;
         peekedToken=peek();
         if (peekedToken.getTokenType() == TokenType.Minus) {
-            analyseNegate_Expr();
+            tokenType=analyseNegate_Expr();
         }
         else if(peekedToken.getTokenType() == TokenType.LParen){
-            analyseGroup_Expr();
+            tokenType=analyseGroup_Expr();
         }
         else if(peekedToken.getTokenType() == TokenType.Ident){
-            analyseAssign_ExprOrIdent_ExprOrCall_Expr();
+            tokenType=analyseAssign_ExprOrIdent_ExprOrCall_Expr();
         }
         else if(peekedToken.getTokenType() == TokenType.Uint||
                 peekedToken.getTokenType() == TokenType.Double||
                 peekedToken.getTokenType() == TokenType.String
         ){
-            analyseLiteral_Expr();
+            tokenType=analyseLiteral_Expr();
+        }
+        else {
+            throw new AnalyzeError(ErrorCode.InvalidExpr, /* 当前位置 */ peekedToken.getStartPos());
+
         }
         while(
               nextIf(TokenType.Plus)!=null||
@@ -572,27 +571,42 @@ public final class Analyser {
               nextIf(TokenType.GE)!=null||
               nextIf(TokenType.GT)!=null
         ){
-            analyseExpr();
+            if(tokenType!=analyseExpr())
+                throw new AnalyzeError(ErrorCode.TypeDifferent, /* 当前位置 */ peekedToken.getStartPos());
         }
         while(nextIf(TokenType.AS_KW)!=null){
-            expect(TokenType.TYPE);
+            Token token;
+            if(peek().getTokenType()==TokenType.Uint)
+                expect(TokenType.Uint);
+            else if(peek().getTokenType()==TokenType.Double)
+                expect(TokenType.Double);
+            else
+                throw new AnalyzeError(ErrorCode.NeedUintOrDouble, /* 当前位置 */ peekedToken.getStartPos());
         }
+        return tokenType;
     }
 
-    private void analyseNegate_Expr() throws CompileError {
+    private TokenType analyseNegate_Expr() throws CompileError {
+        TokenType tokenType;
         expect(TokenType.Minus);
-        analyseExpr();
+        tokenType=analyseExpr();
+        if(tokenType!=TokenType.Uint||tokenType!=TokenType.Double)
+            throw new AnalyzeError(ErrorCode.NeedUintOrDouble, /* 当前位置 */ peekedToken.getStartPos());
+        return tokenType;
     }
-    private void analyseAssign_ExprOrIdent_ExprOrCall_Expr() throws CompileError {
+    private TokenType analyseAssign_ExprOrIdent_ExprOrCall_Expr() throws CompileError {
         Token Ident=expect(TokenType.Ident);
         if (nextIf(TokenType.ASSIGN) != null) {//赋值表达式
             searchGlobalNotConst(Ident);
             analyseExpr();
+            return TokenType.VOID;
         }
         else if(nextIf(TokenType.LParen) != null) {//函数调用
-            searchFunction(Ident);
+            TokenType tokenType = searchFunction(Ident);
             analyseCall_Expr();
+            return tokenType;
         }
+        return searchGlobal(Ident);
     }
 
     private void analyseCall_Expr() throws CompileError {
@@ -605,31 +619,36 @@ public final class Analyser {
             analyseExpr();
         }
     }
-    private void analyseLiteral_Expr() throws CompileError {
+    private TokenType analyseLiteral_Expr() throws CompileError {
         peekedToken=peek();
         if ( peekedToken.getTokenType() == TokenType.Uint) {
             expect(TokenType.Uint);
+            return TokenType.Uint;
         }
         else if ( peekedToken.getTokenType() == TokenType.String) {
             expect(TokenType.String);
+            return TokenType.String;
         }
         else if ( peekedToken.getTokenType() == TokenType.Double) {
             expect(TokenType.Double);
+            return TokenType.Double;
         }
         else
             throw new AnalyzeError(ErrorCode.ExpectedLiteral_expr, /* 当前位置 */ peekedToken.getStartPos());
     }
 
 
-    private void analyseIdent_Expr() throws CompileError {
+    private TokenType analyseIdent_Expr() throws CompileError {
         Token token;
         token=expect(TokenType.Ident);
-        searchGlobal(token);
+        return searchGlobal(token);
     }
-    private void analyseGroup_Expr() throws CompileError {
+    private TokenType analyseGroup_Expr() throws CompileError {
+        TokenType tokenType;
         expect(TokenType.LParen);
-        analyseExpr();
+        tokenType=analyseExpr();
         expect(TokenType.RParen);
+        return tokenType;
     }
 
     private void analyseStmt() throws CompileError {
@@ -668,28 +687,45 @@ public final class Analyser {
         expect(TokenType.Semicolon);
     }
     private void analyseDecl_stmt() throws CompileError {
-        Token token;
+        Token token,type;
+        TokenType tokenType;
         if(nextIf(TokenType.LET_KW)!=null){
             token=expect(TokenType.Ident);
-            defineIdent(token,false);
             expect(TokenType.COLON);
-            expect(TokenType.TYPE);
+            type=expect(TokenType.TYPE);
+            tokenType = getTokenTypeOfUintOrDouble(type);
             if(nextIf(TokenType.ASSIGN)!=null){
-                analyseExpr();
+                if(tokenType!=analyseExpr())
+                    throw new AnalyzeError(ErrorCode.TypeDifferent, /* 当前位置 */ peekedToken.getStartPos());
             }
             expect(TokenType.Semicolon);
+            defineIdent(token,false,tokenType);
         }
         else if(nextIf(TokenType.CONST_KW)!=null){
             expect(TokenType.CONST_KW);
             token=expect(TokenType.Ident);
-            defineIdent(token,true);
             expect(TokenType.COLON);
-            expect(TokenType.TYPE);
+            type=expect(TokenType.TYPE);
+            tokenType = getTokenTypeOfUintOrDouble(type);
             expect(TokenType.ASSIGN);
-            analyseExpr();
+            if(tokenType!=analyseExpr())
+                throw new AnalyzeError(ErrorCode.TypeDifferent, /* 当前位置 */ peekedToken.getStartPos());
             expect(TokenType.Semicolon);
+            defineIdent(token,true,tokenType);
         }
     }
+
+    private TokenType getTokenTypeOfUintOrDouble(Token type) throws AnalyzeError {
+        TokenType tokenType;
+        if (type.getValueString().compareTo("int") == 0)
+            tokenType = TokenType.Uint;
+        else if (type.getValueString().compareTo("double") == 0)
+            tokenType = TokenType.Double;
+        else
+            throw new AnalyzeError(ErrorCode.NeedUintOrDouble, /* 当前位置 */ peekedToken.getStartPos());
+        return tokenType;
+    }
+
     private void analyseIf_stmt() throws CompileError {
         expect(TokenType.IF_KW);
         analyseExpr();
@@ -735,39 +771,44 @@ public final class Analyser {
        expect(TokenType.Semicolon);
     }
 
-    private void analyseFunction() throws CompileError {
+    private TokenType analyseFunction() throws CompileError {
         inFunction=true;
         Token token,type;
+        TokenType tokenType;
         HashMap<String, SymbolEntry> symbolTable = new HashMap<>();
         symbolTableList.add(symbolTable);
         listLength++;
         expect(TokenType.FN_KW);
         token=expect(TokenType.Ident);
-
         expect(TokenType.LParen);
-        List<String> parameterList=analyseFunctionParamList();
+        List<TokenType> parameterList=analyseFunctionParamList();
         expect(TokenType.RParen);
         expect(TokenType.ARROW);
         type=expect(TokenType.TYPE);
         analyseBlock_stmt();
-        defineFunction(token,type,parameterList.size(),parameterList);
+        tokenType = getTokenTypeOfUintOrDouble(type);
+        defineFunction(token,tokenType,parameterList.size(),parameterList);
+        return tokenType;
     }
-    private List<String> analyseFunctionParamList() throws CompileError {
-        List<String> parameterList=new ArrayList<>();
+    private List<TokenType> analyseFunctionParamList() throws CompileError {
+        List<TokenType> parameterList=new ArrayList<>();
         parameterList.add(analyseFunctionParam());
         while (nextIf(TokenType.COMMA)!=null){
             parameterList.add(analyseFunctionParam());
         }
         return  parameterList;
     }
-    private String analyseFunctionParam() throws CompileError {
-        Token token;
+    private TokenType analyseFunctionParam() throws CompileError {
+        Token token,type;
+        TokenType tokenType;
         nextIf(TokenType.CONST_KW);
         token=expect(TokenType.Ident);
-        defineIdent(token,false);
+
         expect(TokenType.COLON);
-        expect(TokenType.TYPE);
-        return token.getValueString();
+        type=expect(TokenType.TYPE);
+        tokenType=getTokenTypeOfUintOrDouble(type);
+        defineIdent(token,false,tokenType);
+        return tokenType;
     }
     private void analyseProgram() throws CompileError {
         //program -> decl_stmt* function*

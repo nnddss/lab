@@ -66,7 +66,7 @@ public class Tokenizer {
             if(Character.isDigit(peek)||peek=='e'||peek=='E'||peek=='+'||peek=='-'){
                 continue;
             }
-            else if(peek=='.'){
+            else if(peek=='.'&&!isDouble){
                 isDouble=true;
             }
             else {
@@ -74,7 +74,7 @@ public class Tokenizer {
             }
         }
         try {
-            if(isDouble){
+            if(!isDouble){
                 Integer num = Integer.parseInt(number.toString());
                 Pos endPos = new Pos(it.currentPos().row,it.currentPos().col);
                 Token token=new Token(TokenType.Uint, num, startPos, endPos);
