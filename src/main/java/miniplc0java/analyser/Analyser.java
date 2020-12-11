@@ -576,10 +576,14 @@ public final class Analyser {
         }
         while(nextIf(TokenType.AS_KW)!=null){
             Token token;
-            if(peek().getTokenType()==TokenType.Uint)
+            if(peek().getTokenType()==TokenType.Uint){
                 expect(TokenType.Uint);
-            else if(peek().getTokenType()==TokenType.Double)
+                tokenType=TokenType.Uint;
+            }
+            else if(peek().getTokenType()==TokenType.Double){
                 expect(TokenType.Double);
+                tokenType=TokenType.Double;
+            }
             else
                 throw new AnalyzeError(ErrorCode.NeedUintOrDouble, /* 当前位置 */ peekedToken.getStartPos());
         }
