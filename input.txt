@@ -1,0 +1,6 @@
+fn foo()->void{
+;
+}
+fn foo()->void{
+;
+}

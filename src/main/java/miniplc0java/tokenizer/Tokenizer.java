@@ -335,6 +335,10 @@ public class Tokenizer {
                 // 填入返回语句
                 //throw new Error("Not implemented");
                 return new Token(TokenType.COLON, ':', it.previousPos(), it.currentPos());
+            case ';':
+                // 填入返回语句
+                //throw new Error("Not implemented");
+                return new Token(TokenType.Semicolon, ';', it.previousPos(), it.currentPos());
             case '!':
                 // 填入返回语句
                 //throw new Error("Not implemented");

@@ -115,7 +115,7 @@ public final class Analyser {
         HashMap<String, SymbolEntry> symbolTable = symbolTableList.get(listLength);
         if(symbolTable.containsKey(token.getValueString())==false){
             SymbolEntry symbolEntry=new SymbolEntry(isConstant,true,false,
-                    nextOffset,tokenType,token.getStartPos());
+                    nextOffset,token.getValueString(),tokenType,token.getStartPos());
             nextOffset= (int) (nextOffset+ instrumentation.getObjectSize(token.getValue()));
             symbolTable.put(token.getValueString(),symbolEntry);
         }
@@ -129,7 +129,7 @@ public final class Analyser {
         HashMap<String, SymbolEntry> symbolTable = symbolTableList.get(0);
         if(symbolTable.containsKey(token.getValueString())==false){
             SymbolEntry symbolEntry=new SymbolEntry(true,true,
-                    nextOffset,tokenType,token.getStartPos(),parameterCount,parameterList);
+                    nextOffset,token.getValueString(),tokenType,token.getStartPos(),parameterCount,parameterList);
             nextOffset= (int) (nextOffset+ instrumentation.getObjectSize(token.getValue()));
             symbolTable.put(token.getValueString(),symbolEntry);
         }
@@ -825,5 +825,8 @@ public final class Analyser {
                 analyseFunction();
             peekedToken=peek();
         }
+        Token token=new Token(TokenType.Ident,"main",null,null);
+        searchFunction(token);
+
     }
 }

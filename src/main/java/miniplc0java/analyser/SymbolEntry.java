@@ -14,21 +14,23 @@ public class SymbolEntry {
     TokenType tokenType;
     Pos pos;
     int parameterCount;
+    String name;
     List<String> parameterList= new ArrayList<>();
     /**
      * @param isConstant
      * @param isDeclared
      * @param stackOffset
      */
-    public SymbolEntry(boolean isConstant, boolean isDeclared,boolean isFunction, int stackOffset, TokenType tokenType, Pos pos) {
+    public SymbolEntry(boolean isConstant, boolean isDeclared,boolean isFunction, int stackOffset, String name,TokenType tokenType, Pos pos) {
         this.isConstant = isConstant;
         this.isInitialized = isDeclared;
         this.isFunction =isFunction;
         this.stackOffset = stackOffset;
         this.tokenType = tokenType;
         this.pos = pos;
+        this.name=name;
     }
-    public SymbolEntry(boolean isDeclared,boolean isFunction, int stackOffset, TokenType tokenType, Pos pos,int parameterCount,List parameterList) {
+    public SymbolEntry(boolean isDeclared,boolean isFunction, int stackOffset, String name,TokenType tokenType, Pos pos,int parameterCount,List parameterList) {
         this.isConstant = isConstant;
         this.isInitialized = isDeclared;
         this.isFunction =isFunction;
@@ -37,6 +39,7 @@ public class SymbolEntry {
         this.pos = pos;
         this.parameterCount=parameterCount;
         this.parameterList=parameterList;
+        this.name=name;
     }
     public TokenType getTokenType() {
         return tokenType;
