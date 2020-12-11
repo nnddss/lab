@@ -1,1 +1,1 @@
-Analyze Error: DuplicateDeclaration, at: Pos(row: 3, col: 3)
+Analyse error. Expected [Arrow] at Pos(row: 0, col: 9)got: Token(L_Brace, value: {at: Pos(row: 0, col: 9)
