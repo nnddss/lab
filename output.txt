@@ -1,1 +1,1 @@
-Analyse error. Expected [Arrow] at Pos(row: 0, col: 9)got: Token(L_Brace, value: {at: Pos(row: 0, col: 9)
+Analyze Error: TypeDifferent, at: Pos(row: 4, col: 0)

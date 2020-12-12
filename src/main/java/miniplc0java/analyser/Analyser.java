@@ -752,13 +752,16 @@ public final class Analyser {
         analyseBlock_stmt();
 
     }
-    private void analyseReturn_stmt() throws CompileError {
+    private TokenType analyseReturn_stmt() throws CompileError {
+        TokenType tokenType=TokenType.VOID;
         expect(TokenType.RETURN_KW);
         if(nextIf(TokenType.Semicolon)==null)
-            analyseExpr();
+            tokenType=analyseExpr();
         expect(TokenType.Semicolon);
+        return tokenType;
     }
-    private void analyseBlock_stmt() throws CompileError {
+    private TokenType analyseBlock_stmt() throws CompileError {
+        TokenType tokenType=null,returnType;;
         if(inFunction==false){
             HashMap<String, SymbolEntry> symbolTable = new HashMap<>();
             symbolTableList.add(symbolTable);
@@ -769,10 +772,21 @@ public final class Analyser {
         }
         expect(TokenType.L_BRACE);
         while (nextIf(TokenType.R_BRACE)==null){
+            if(peek().getTokenType()==TokenType.RETURN_KW){
+                 returnType=analyseReturn_stmt();
+                if(tokenType==null)
+                tokenType=returnType;
+                else if(tokenType!=returnType){
+                    throw new AnalyzeError(ErrorCode.TypeDifferent, peek().getStartPos());
+                }
+
+            }
             analyseStmt();
         }
         symbolTableList.remove(listLength);
         listLength--;
+
+        return tokenType;
     }
     private void analyseEmpty_stmt() throws CompileError {
        expect(TokenType.Semicolon);
@@ -795,8 +809,10 @@ public final class Analyser {
         expect(TokenType.RParen);
         expect(TokenType.ARROW);
         type=expect(TokenType.TYPE);
-        analyseBlock_stmt();
-        tokenType = getTokenTypeOfUintOrDouble(type);
+        tokenType=analyseBlock_stmt();
+        if(tokenType != getTokenTypeOfUintOrDouble(type))
+            throw new AnalyzeError(ErrorCode.TypeDifferent, peek().getStartPos());
+
         defineFunction(token,tokenType,parameterList.size(),parameterList);
         return tokenType;
     }
