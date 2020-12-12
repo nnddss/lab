@@ -771,7 +771,11 @@ public final class Analyser {
             inFunction = false;
         }
         expect(TokenType.L_BRACE);
-        while (nextIf(TokenType.R_BRACE)==null){
+        peek();
+        while (peekedToken.getTokenType()!=TokenType.R_BRACE){
+            if(peekedToken.getTokenType()==TokenType.EOF){
+                throw new AnalyzeError(ErrorCode.InvalidExpr, peek().getStartPos());
+            }
             if(peek().getTokenType()==TokenType.RETURN_KW){
                  returnType=analyseReturn_stmt();
                 if(tokenType==null)

@@ -1,1 +1,1 @@
-Analyze Error: TypeDifferent, at: Pos(row: 4, col: 0)
+Analyze Error: InvalidExpr, at: Pos(row: 1, col: 0)

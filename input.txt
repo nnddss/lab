@@ -1,5 +1,1 @@
-fn foo() -> double {
-    return 1;
-}
-
-fn main() -> void {}
+fn main() -> void {
