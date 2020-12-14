@@ -6,13 +6,10 @@ import miniplc0java.tokenizer.TokenType;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ExprReturn {
-    TokenType type;
-    long intValue;
-    String stringValue;
-    Double doubleValue;
+public class StmtReturn {
+    TokenType tokenType;
     List<Instruction> instructionList;
-    public ExprReturn(){
+    public StmtReturn(){
         this.instructionList=new ArrayList<>();
     }
 }

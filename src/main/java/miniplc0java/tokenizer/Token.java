@@ -17,6 +17,10 @@ public class Token {
         this.startPos = startPos;
         this.endPos = endPos;
     }
+    public Token(TokenType tokenType, Object value) {
+        this.tokenType = tokenType;
+        this.value = value;
+    }
 
     public Token(Token token) {
         this.tokenType = token.tokenType;

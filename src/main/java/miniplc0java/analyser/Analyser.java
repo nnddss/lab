@@ -6,16 +6,13 @@ import miniplc0java.error.ErrorCode;
 import miniplc0java.error.ExpectedTokenError;
 import miniplc0java.error.TokenizeError;
 import miniplc0java.instruction.Instruction;
-import miniplc0java.instruction.Operation;
 import miniplc0java.tokenizer.Token;
 import miniplc0java.tokenizer.TokenType;
 import miniplc0java.tokenizer.Tokenizer;
 import miniplc0java.util.Pos;
 
-import java.lang.instrument.Instrumentation;
+import java.io.*;
 import java.util.*;
-
-import static javax.swing.text.StyleConstants.Size;
 
 public final class Analyser {
     Tokenizer tokenizer;
@@ -23,6 +20,8 @@ public final class Analyser {
     /** 当前偷看的 token */
     Token peekedToken = null;
     boolean inFunction=false;
+    int start=0;
+    byte b[];
     //如果是从function进入block会多加一层，
     //所以在进入function时创建局部符号表并且将该值置为true，
     //这样在进入block时不在创建局部符号表，
@@ -35,12 +34,11 @@ public final class Analyser {
     int listLength;
     /** 下一个变量的栈偏移 */
     int nextOffset ;
-
     public Analyser(Tokenizer tokenizer) {
         this.tokenizer = tokenizer;
         this.instructions = new ArrayList<>();
     }
-    public List<Instruction> analyse() throws CompileError {
+    public List<Instruction> analyse() throws CompileError, IOException {
         analyseProgram();
         return instructions;
     }
@@ -109,52 +107,61 @@ public final class Analyser {
     /**
      * 如果该标识符未定义，则定义，否则抛出异常
      */
-    private void defineIdent(Token token,boolean isConstant,TokenType tokenType) throws CompileError {
+    private void defineIdent(Token token,boolean isConstant,TokenType tokenType,int number) throws CompileError {
         //boolean isConstant, boolean isDeclared, int stackOffset,
         // TokenType tokenType, Pos pos
 
         HashMap<String, SymbolEntry> symbolTable = symbolTableList.get(listLength);
-        if(symbolTable.containsKey(token.getValueString())==false){
-            SymbolEntry symbolEntry=new SymbolEntry(isConstant,true,false,
-                    nextOffset,token.getValueString(),tokenType,token.getStartPos());
-            //nextOffset= (int) (nextOffset+ token.getValue());
+        if(!symbolTable.containsKey(token.getValueString())){
+            SymbolEntry symbolEntry;
+            if(listLength==0) {
+                symbolEntry = new SymbolEntry(true, isConstant, true, false,
+                        nextOffset, token.getValueString(), tokenType, token.getStartPos(), number);
+            }
+            else{
+                symbolEntry = new SymbolEntry(false, isConstant, true, false,
+                        nextOffset, token.getValueString(), tokenType, token.getStartPos(), number);
+            }
             symbolTable.put(token.getValueString(),symbolEntry);
+            //nextOffset= (int) (nextOffset+ token.getValue());
+
         }
         else {
             throw new AnalyzeError(ErrorCode.DuplicateDeclaration, token.getStartPos());
         }
     }
-    private void defineFunction(Token token,TokenType tokenType,int parameterCount,List parameterList) throws CompileError {
+    private void defineFunction(Token token,TokenType tokenType,int parameterCount,List parameterList,int localParameterNum,List<Instruction> instructionList) throws CompileError {
         //boolean isConstant, boolean isDeclared, int stackOffset,
         // TokenType tokenType, Pos pos
         HashMap<String, SymbolEntry> symbolTable = symbolTableList.get(0);
-        if(symbolTable.containsKey(token.getValueString())==false){
+        if(!symbolTable.containsKey(token.getValueString())){
             SymbolEntry symbolEntry=new SymbolEntry(true,true,
-                    nextOffset,token.getValueString(),tokenType,token.getStartPos(),parameterCount,parameterList);
+                    nextOffset,token.getValueString(),tokenType,token.getStartPos(),parameterCount,parameterList,localParameterNum,instructionList);
             //nextOffset= (int) (nextOffset+ instrumentation.getObjectSize(token.getValue()));
             symbolTable.put(token.getValueString(),symbolEntry);
+
         }
         else {
             throw new AnalyzeError(ErrorCode.DuplicateDeclaration, token.getStartPos());
         }
     }
-    private TokenType searchFunction(Token token) throws CompileError {
+    private SymbolEntry searchFunction(Token token) throws CompileError {
         //boolean isConstant, boolean isDeclared, int stackOffset,
         // TokenType tokenType, Pos pos
         HashMap<String, SymbolEntry> symbolTable = symbolTableList.get(0);
-        if(symbolTable.containsKey(token.getValueString())==false){
+        if(!symbolTable.containsKey(token.getValueString())){
             throw new AnalyzeError(ErrorCode.NotDeclared, token.getStartPos());
         }
         else
-            return symbolTable.get(token.getValueString()).getTokenType();
+            return symbolTable.get(token.getValueString());
     }
-    private TokenType searchGlobalNotConst(Token token) throws CompileError {
+    private SymbolEntry searchGlobalNotConst(Token token) throws CompileError {
         //boolean isConstant, boolean isDeclared, int stackOffset,
         // TokenType tokenType, Pos pos
         for(int i=listLength;i>=0;i--){
             HashMap<String, SymbolEntry> symbolTable = symbolTableList.get(i);
             if(symbolTable.containsKey(token.getValueString())&&!symbolTable.get(token.getValueString()).isConstant){
-                return symbolTable.get(token.getValueString()).getTokenType();
+                return symbolTable.get(token.getValueString());
             }
             else if(symbolTable.containsKey(token.getValueString())&&symbolTable.get(token.getValueString()).isConstant){
                 throw new AnalyzeError(ErrorCode.AssignToConstant, token.getStartPos());
@@ -162,13 +169,13 @@ public final class Analyser {
         }
         throw new AnalyzeError(ErrorCode.NotDeclared, token.getStartPos());
     }
-    private TokenType searchGlobal(Token token) throws CompileError {
+    private SymbolEntry searchGlobal(Token token) throws CompileError {
         //boolean isConstant, boolean isDeclared, int stackOffset,
         // TokenType tokenType, Pos pos
         for(int i=listLength;i>=0;i--){
             HashMap<String, SymbolEntry> symbolTable = symbolTableList.get(i);
             if(symbolTable.containsKey(token.getValueString())){
-                return symbolTable.get(token.getValueString()).getTokenType();
+                return symbolTable.get(token.getValueString());
             }
         }
         throw new AnalyzeError(ErrorCode.NotDeclared, token.getStartPos());
@@ -537,28 +544,36 @@ public final class Analyser {
 //        }
 //        //throw new Error("Not implemented");
 //    }
-    private TokenType analyseExpr() throws CompileError {
+    private ExprReturn analyseExpr() throws CompileError {
         // 表达式 -> 运算符表达式|取反|赋值|类型转换|call|字面量|标识符|括号
-        TokenType tokenType;
+        ExprReturn exprReturn=new ExprReturn();
+        ExprReturn exprReturn1=new ExprReturn();
+        // TODO: 2020-12-13 取反指令
         peekedToken=peek();
         if (peekedToken.getTokenType() == TokenType.Minus) {
-            tokenType=analyseNegate_Expr();
+            exprReturn=analyseNegate_Expr();
+            if(exprReturn.type==TokenType.Double)
+                exprReturn.instructionList.add(new Instruction(0x35));
+            else if(exprReturn.type==TokenType.Uint)
+                exprReturn.instructionList.add(new Instruction(0x34));
+            else
+                throw new AnalyzeError(ErrorCode.NeedUintOrDouble, /* 当前位置 */ peekedToken.getStartPos());
         }
         else if(peekedToken.getTokenType() == TokenType.LParen){
-            tokenType=analyseGroup_Expr();
+            exprReturn=analyseGroup_Expr();
         }
         else if(peekedToken.getTokenType() == TokenType.Ident){
-            tokenType=analyseAssign_ExprOrIdent_ExprOrCall_Expr();
+            exprReturn=analyseAssign_ExprOrIdent_ExprOrCall_Expr();
         }
         else if(peekedToken.getTokenType() == TokenType.Uint||
                 peekedToken.getTokenType() == TokenType.Double||
                 peekedToken.getTokenType() == TokenType.String
         ){
-            tokenType=analyseLiteral_Expr();
+
+            exprReturn=analyseLiteral_Expr();
         }
         else {
             throw new AnalyzeError(ErrorCode.InvalidExpr, /* 当前位置 */ peekedToken.getStartPos());
-
         }
         while(
               nextIf(TokenType.Plus)!=null||
@@ -572,51 +587,85 @@ public final class Analyser {
               nextIf(TokenType.GE)!=null||
               nextIf(TokenType.GT)!=null
         ){
-            if(tokenType!=analyseExpr())
+            TokenType tokenType=exprReturn.type;
+            exprReturn1=analyseExpr();
+
+            if(tokenType!=exprReturn1.type)
                 throw new AnalyzeError(ErrorCode.TypeDifferent, /* 当前位置 */ peekedToken.getStartPos());
+
         }
         while(nextIf(TokenType.AS_KW)!=null){
             Token token;
             if(peek().getTokenType()==TokenType.Uint){
                 expect(TokenType.Uint);
-                tokenType=TokenType.Uint;
+                exprReturn.type=TokenType.Uint;
             }
             else if(peek().getTokenType()==TokenType.Double){
                 expect(TokenType.Double);
-                tokenType=TokenType.Double;
+                exprReturn.type=TokenType.Double;
             }
             else
                 throw new AnalyzeError(ErrorCode.NeedUintOrDouble, /* 当前位置 */ peekedToken.getStartPos());
         }
-        return tokenType;
-    }
 
-    private TokenType analyseNegate_Expr() throws CompileError {
+        return exprReturn;
+    }
+    private ExprReturn analyseOperator_Expr(Token token) throws CompileError {
+        ExprReturn exprReturn=new ExprReturn();
         TokenType tokenType;
         expect(TokenType.Minus);
-        tokenType=analyseExpr();
-        if(tokenType!=TokenType.Uint||tokenType!=TokenType.Double)
+        exprReturn=analyseExpr();
+        if(exprReturn.type!=TokenType.Uint||exprReturn.type!=TokenType.Double)
             throw new AnalyzeError(ErrorCode.NeedUintOrDouble, /* 当前位置 */ peekedToken.getStartPos());
-        return tokenType;
+        return exprReturn;
     }
-    private TokenType analyseAssign_ExprOrIdent_ExprOrCall_Expr() throws CompileError {
+    private ExprReturn analyseNegate_Expr() throws CompileError {
+        ExprReturn exprReturn=new ExprReturn();
+        TokenType tokenType;
+        expect(TokenType.Minus);
+        exprReturn=analyseExpr();
+        if(exprReturn.type!=TokenType.Uint||exprReturn.type!=TokenType.Double)
+            throw new AnalyzeError(ErrorCode.NeedUintOrDouble, /* 当前位置 */ peekedToken.getStartPos());
+        return exprReturn;
+    }
+    private ExprReturn analyseAssign_ExprOrIdent_ExprOrCall_Expr() throws CompileError {
+        ExprReturn exprReturn=new ExprReturn();
+        ExprReturn exprReturn1=new ExprReturn();
+        SymbolEntry symbolEntry;
         Token Ident=expect(TokenType.Ident);
         if (nextIf(TokenType.ASSIGN) != null) {//赋值表达式
-            searchGlobalNotConst(Ident);
-            analyseExpr();
-            return TokenType.VOID;
+            symbolEntry=searchGlobalNotConst(Ident);
+            exprReturn1=analyseExpr();
+            if(symbolEntry.isGlobal)
+                exprReturn.instructionList.add(new Instruction(0x0c,symbolEntry.number));
+            else
+                exprReturn.instructionList.add(new Instruction(0x0a,symbolEntry.number));
+            exprReturn.instructionList.addAll(exprReturn1.instructionList);
+            exprReturn.type=TokenType.VOID;
+            return exprReturn;
         }
         else if(nextIf(TokenType.LParen) != null) {//函数调用
-            TokenType tokenType = searchFunction(Ident);
-            analyseCall_Expr();
-            return tokenType;
+            TokenType tokenType = searchFunction(Ident).tokenType;
+            exprReturn=analyseCall_Expr(Ident);
+            return exprReturn;
         }
-        return searchGlobal(Ident);
+        symbolEntry=searchGlobal(Ident);
+        exprReturn.type=symbolEntry.tokenType;
+        if(symbolEntry.isGlobal)
+            exprReturn.instructionList.add(new Instruction(0x0c,symbolEntry.number));
+        else
+            exprReturn.instructionList.add(new Instruction(0x0a,symbolEntry.number));
+        exprReturn.instructionList.add(new Instruction(0x13));
+        return exprReturn;
     }
 
-    private void analyseCall_Expr() throws CompileError {
+    private ExprReturn analyseCall_Expr(Token Ident) throws CompileError {
+        ExprReturn exprReturn=new ExprReturn();
         analyseCallParamList();
         expect(TokenType.RParen);
+        exprReturn.type=TokenType.VOID;
+        exprReturn.instructionList.add(new Instruction(0x4a,searchFunction(Ident).number));
+        return exprReturn;
     }
     private void analyseCallParamList() throws CompileError {
         analyseExpr();
@@ -624,19 +673,23 @@ public final class Analyser {
             analyseExpr();
         }
     }
-    private TokenType analyseLiteral_Expr() throws CompileError {
+    private ExprReturn analyseLiteral_Expr() throws CompileError {
+        ExprReturn exprReturn=new ExprReturn();
         peekedToken=peek();
         if ( peekedToken.getTokenType() == TokenType.Uint) {
             expect(TokenType.Uint);
-            return TokenType.Uint;
+            exprReturn.type=TokenType.Uint;
+            return exprReturn;
         }
         else if ( peekedToken.getTokenType() == TokenType.String) {
             expect(TokenType.String);
-            return TokenType.String;
+            exprReturn.type=TokenType.String;
+            return exprReturn;
         }
         else if ( peekedToken.getTokenType() == TokenType.Double) {
             expect(TokenType.Double);
-            return TokenType.Double;
+            exprReturn.type=TokenType.Double;
+            return exprReturn;
         }
         else
             throw new AnalyzeError(ErrorCode.ExpectedLiteral_expr, /* 当前位置 */ peekedToken.getStartPos());
@@ -646,18 +699,19 @@ public final class Analyser {
     private TokenType analyseIdent_Expr() throws CompileError {
         Token token;
         token=expect(TokenType.Ident);
-        return searchGlobal(token);
+        return searchGlobal(token).tokenType;
     }
-    private TokenType analyseGroup_Expr() throws CompileError {
-        TokenType tokenType;
+    private ExprReturn analyseGroup_Expr() throws CompileError {
+        ExprReturn exprReturn=new ExprReturn();
         expect(TokenType.LParen);
-        tokenType=analyseExpr();
+        exprReturn=analyseExpr();
         expect(TokenType.RParen);
-        return tokenType;
+        return exprReturn;
     }
 
-    private void analyseStmt() throws CompileError {
+    private StmtReturn analyseStmt() throws CompileError {
         // 表达式 -> 运算符表达式|取反|赋值|类型转换|call|字面量|标识符|括号
+        StmtReturn stmtReturn=new StmtReturn();
         peekedToken=peek();
         if(peekedToken.getTokenType()==TokenType.Ident||
            peekedToken.getTokenType()==TokenType.Minus||
@@ -665,33 +719,36 @@ public final class Analyser {
            peekedToken.getTokenType()==TokenType.Uint||
            peekedToken.getTokenType()==TokenType.String||
            peekedToken.getTokenType()==TokenType.Double){
-            analyseExpr_stmt();
+            stmtReturn.instructionList.addAll(analyseExpr_stmt().instructionList);
         }
         else if(peekedToken.getTokenType()==TokenType.LET_KW||
                 peekedToken.getTokenType()==TokenType.CONST_KW){
             analyseDecl_stmt();
         }
         else if(peekedToken.getTokenType()==TokenType.IF_KW){
-            analyseIf_stmt();
+            stmtReturn.instructionList.addAll(analyseIf_stmt().instructionList);
         }
         else if(peekedToken.getTokenType()==TokenType.WHILE_KW){
-            analyseWhile_stmt();
+            stmtReturn.instructionList.addAll(analyseWhile_stmt().instructionList);
         }
         else if(peekedToken.getTokenType()==TokenType.RETURN_KW){
-            analyseReturn_stmt();
+            stmtReturn.instructionList.addAll(analyseReturn_stmt().instructionList);
         }
         else if(peekedToken.getTokenType()==TokenType.L_BRACE){
-            analyseBlock_stmt();
+            stmtReturn.instructionList.addAll(analyseBlock_stmt().instructionList);
         }
         else if(peekedToken.getTokenType()==TokenType.Semicolon){
             expect(TokenType.Semicolon);
         }
+        return stmtReturn;
     }
-    private void analyseExpr_stmt() throws CompileError {
-        analyseExpr();
+    private ExprReturn analyseExpr_stmt() throws CompileError {
+        ExprReturn exprReturn = analyseExpr();
         expect(TokenType.Semicolon);
+        return exprReturn;
     }
     private void analyseDecl_stmt() throws CompileError {
+        ExprReturn exprReturn=new ExprReturn(),exprReturn1=new ExprReturn();
         Token token,type;
         TokenType tokenType;
         if(nextIf(TokenType.LET_KW)!=null){
@@ -700,23 +757,47 @@ public final class Analyser {
             type=expect(TokenType.TYPE);
             tokenType = getTokenTypeOfUintOrDouble(type);
             if(nextIf(TokenType.ASSIGN)!=null){
-                if(tokenType!=analyseExpr())
+                exprReturn1=analyseExpr();
+                if(tokenType!=exprReturn1.type)
                     throw new AnalyzeError(ErrorCode.TypeDifferent, /* 当前位置 */ peekedToken.getStartPos());
             }
             expect(TokenType.Semicolon);
-            defineIdent(token,false,tokenType);
+            exprReturn.type=tokenType;
+            int size=symbolTableList.size();
+            defineIdent(token,false,tokenType,size);
+            List<Instruction> instructionList=new ArrayList<>();
+            if(listLength==0)
+                instructionList.add(new Instruction(0x0c,size));
+            else
+                instructionList.add(new Instruction(0x0a,size));
+            instructionList.addAll(exprReturn1.instructionList);
+            instructionList.add(new Instruction(0x17,size));
+            searchGlobal(token).instructionList=instructionList;
+
         }
         else if(nextIf(TokenType.CONST_KW)!=null){
-            expect(TokenType.CONST_KW);
             token=expect(TokenType.Ident);
             expect(TokenType.COLON);
             type=expect(TokenType.TYPE);
             tokenType = getTokenTypeOfUintOrDouble(type);
             expect(TokenType.ASSIGN);
-            if(tokenType!=analyseExpr())
+            exprReturn1=analyseExpr();
+            if(tokenType!=exprReturn1.type)
                 throw new AnalyzeError(ErrorCode.TypeDifferent, /* 当前位置 */ peekedToken.getStartPos());
+
             expect(TokenType.Semicolon);
-            defineIdent(token,true,tokenType);
+            expect(TokenType.Semicolon);
+            exprReturn.type=tokenType;
+            int size=symbolTableList.size();
+            defineIdent(token,true,tokenType,size);
+            List<Instruction> instructionList=new ArrayList<>();
+            if(listLength==0)
+                instructionList.add(new Instruction(0x0c,size));
+            else
+                instructionList.add(new Instruction(0x0a,size));
+            instructionList.addAll(exprReturn1.instructionList);
+            instructionList.add(new Instruction(0x17,size));
+            searchGlobal(token).instructionList=instructionList;
         }
     }
 
@@ -733,7 +814,9 @@ public final class Analyser {
         return tokenType;
     }
 
-    private void analyseIf_stmt() throws CompileError {
+    // TODO: 2020-12-13 if语句指令生成
+    private StmtReturn analyseIf_stmt() throws CompileError {
+        StmtReturn stmtReturn=new StmtReturn();
         expect(TokenType.IF_KW);
         analyseExpr();
         analyseBlock_stmt();
@@ -745,22 +828,34 @@ public final class Analyser {
             else
                 analyseBlock_stmt();
         }
+        return stmtReturn;
     }
-    private void analyseWhile_stmt() throws CompileError {
+
+    // TODO: 2020-12-13 while语句指令生成
+    private StmtReturn analyseWhile_stmt() throws CompileError {
+        StmtReturn stmtReturn=new StmtReturn();
         expect(TokenType.WHILE_KW);
         analyseExpr();
         analyseBlock_stmt();
-
+        return stmtReturn;
     }
-    private TokenType analyseReturn_stmt() throws CompileError {
+    private StmtReturn analyseReturn_stmt() throws CompileError {
+        StmtReturn stmtReturn=new StmtReturn();
         TokenType tokenType=TokenType.VOID;
         expect(TokenType.RETURN_KW);
-        if(nextIf(TokenType.Semicolon)==null)
-            tokenType=analyseExpr();
-        expect(TokenType.Semicolon);
-        return tokenType;
+        if(nextIf(TokenType.Semicolon)==null){
+            tokenType=analyseExpr().type;
+            expect(TokenType.Semicolon);
+        }
+
+
+        stmtReturn.tokenType=tokenType;
+        stmtReturn.instructionList.add(new Instruction(0x49));
+        return stmtReturn;
     }
-    private TokenType analyseBlock_stmt() throws CompileError {
+    private FunctionReturn analyseBlock_stmt() throws CompileError {
+        StmtReturn stmtReturn=new StmtReturn();
+        FunctionReturn functionReturn=new FunctionReturn();
         TokenType tokenType=null,returnType;;
         if(inFunction==false){
             HashMap<String, SymbolEntry> symbolTable = new HashMap<>();
@@ -777,20 +872,25 @@ public final class Analyser {
                 throw new AnalyzeError(ErrorCode.InvalidExpr, peek().getStartPos());
             }
             if(peek().getTokenType()==TokenType.RETURN_KW){
-                 returnType=analyseReturn_stmt();
-                if(tokenType==null)
-                tokenType=returnType;
+                stmtReturn=analyseReturn_stmt();
+                functionReturn.instructionList.addAll(stmtReturn.instructionList);
+                returnType=stmtReturn.tokenType;
+
+                if(functionReturn.tokenType==null)
+                    functionReturn.tokenType=returnType;
                 else if(tokenType!=returnType){
                     throw new AnalyzeError(ErrorCode.TypeDifferent, peek().getStartPos());
                 }
-
+                return functionReturn;
             }
-            analyseStmt();
+            stmtReturn=analyseStmt();
+            functionReturn.instructionList.addAll(stmtReturn.instructionList);
         }
+        functionReturn.localParameterNum=symbolTableList.get(listLength).size();
         symbolTableList.remove(listLength);
         listLength--;
-
-        return tokenType;
+        functionReturn.tokenType=tokenType;
+        return functionReturn;
     }
     private void analyseEmpty_stmt() throws CompileError {
        expect(TokenType.Semicolon);
@@ -813,22 +913,25 @@ public final class Analyser {
         expect(TokenType.RParen);
         expect(TokenType.ARROW);
         type=expect(TokenType.TYPE);
-        tokenType=analyseBlock_stmt();
+        FunctionReturn functionReturn=analyseBlock_stmt();
+        tokenType=functionReturn.tokenType;
         if(tokenType != getTokenTypeOfUintOrDouble(type))
             throw new AnalyzeError(ErrorCode.TypeDifferent, peek().getStartPos());
+        defineFunction(token,getTokenTypeOfUintOrDouble(type),parameterList.size(),parameterList,functionReturn.localParameterNum,functionReturn.instructionList);
 
-        defineFunction(token,tokenType,parameterList.size(),parameterList);
         return tokenType;
     }
     private List<TokenType> analyseFunctionParamList() throws CompileError {
+        int i=0;
         List<TokenType> parameterList=new ArrayList<>();
-        parameterList.add(analyseFunctionParam());
+        parameterList.add(analyseFunctionParam(0));
         while (nextIf(TokenType.COMMA)!=null){
-            parameterList.add(analyseFunctionParam());
+            i++;
+            parameterList.add(analyseFunctionParam(i));
         }
         return  parameterList;
     }
-    private TokenType analyseFunctionParam() throws CompileError {
+    private TokenType analyseFunctionParam(int i) throws CompileError {
         Token token,type;
         TokenType tokenType;
         nextIf(TokenType.CONST_KW);
@@ -837,20 +940,19 @@ public final class Analyser {
         expect(TokenType.COLON);
         type=expect(TokenType.TYPE);
         tokenType=getTokenTypeOfUintOrDouble(type);
-        defineIdent(token,false,tokenType);
+        defineIdent(token,false,tokenType,i);
         return tokenType;
     }
-    private void analyseProgram() throws CompileError {
+    private void analyseProgram() throws CompileError, IOException {
         //program -> decl_stmt* function*
+        DataOutputStream out = new DataOutputStream(new FileOutputStream("output.txt"));
         /** 符号表 */
          symbolTable = new HashMap<>();
         /** 符号表集 */
          symbolTableList = new ArrayList<>();
          symbolTableList.add(symbolTable);
-         listLength=0;
-
-        /** 下一个变量的栈偏移 */
-         nextOffset = 0;
+         listLength=1;
+         b=new byte[100000];
         peekedToken=peek();
         while (peekedToken.getTokenType()==TokenType.LET_KW||
                 peekedToken.getTokenType()==TokenType.FN_KW){
@@ -860,8 +962,142 @@ public final class Analyser {
                 analyseFunction();
             peekedToken=peek();
         }
-        Token token=new Token(TokenType.Ident,"main",null,null);
+        String s="main";
+        Token token=new Token(TokenType.Ident,s);
         searchFunction(token);
+        output(out);
+        out.close();
+    }
+    private  void int32ToByte(int i) {
+        b[start] = (byte)((i >> 24) & 0xFF);
+        b[start+1] = (byte)((i >> 16) & 0xFF);
+        b[start+2] = (byte)((i >> 8) & 0xFF);
+        b[start+3] = (byte)(i & 0xFF);
+        start=start+4;
+    }
+    private  void int64ToByte(long i) {
+        b[start] = (byte)((i >> 56) & 0xFF);
+        b[start+1] = (byte)((i >> 48) & 0xFF);
+        b[start+2] = (byte)((i >> 40) & 0xFF);
+        b[start+3] = (byte)((i >> 32) & 0xFF);
+        b[start+4] = (byte)((i >> 24) & 0xFF);
+        b[start+5] = (byte)((i >> 16) & 0xFF);
+        b[start+6] = (byte)((i >> 8) & 0xFF);
+        b[start+7] = (byte)(i & 0xFF);
+        start=start+8;
+    }
+    private  void doubleToByte(double d) {
+        long value = Double.doubleToRawLongBits(d);;
+        for (int i = 0; i < 8; i++) {
+            b[i+start] = (byte) ((value >> 8 * i) & 0xff);
+        }
+        start=start+8;
 
     }
+    private  void boolToByte(boolean i) {
+        b[start] = (byte) (i ? 0x01 : 0x00);
+        start=start+1;
+    }
+    private  void stringToByte(String s) {
+        int l= s.length();
+        for(int i=0;i<l;i++)
+            b[start+i] = (byte)(s.charAt(i));
+        start=start+l;
+    }
+    private  void instructionToByte(Instruction instruction) {
+        b[start] = (byte) (instruction.opt& 0xFF);
+        start=start+1;
+        if(instruction.parameterLength==4){
+            int32ToByte(instruction.x);
+        }
+        else if(instruction.parameterLength==8){
+            int64ToByte(instruction.x);
+        }
+    }
+
+    private void output(DataOutputStream out) throws CompileError, IOException {
+        List<Instruction> instructionList=new ArrayList<>();
+        b=new byte[10000];
+        symbolTable=symbolTableList.get(0);
+        int32ToByte(0x72303b3e);
+        int32ToByte(0x00000001);
+        int IdentNum=0,FunctionNum=0;
+        for (Map.Entry<String, SymbolEntry> entry : symbolTable.entrySet()) {
+            if(!entry.getValue().isFunction)
+                IdentNum++;
+            else{
+                FunctionNum++;
+                entry.getValue().number=IdentNum+FunctionNum;
+            }
+
+        }
+        int32ToByte(IdentNum);
+        for (Map.Entry<String, SymbolEntry> entry : symbolTable.entrySet()) {
+            if(!entry.getValue().isFunction){
+                boolToByte(entry.getValue().isConstant);
+                if(entry.getValue().tokenType==TokenType.Uint){
+                    int32ToByte(8);
+                    int64ToByte(entry.getValue().uintValue);
+                    instructionList.addAll(entry.getValue().instructionList);
+                }
+                else if(entry.getValue().tokenType==TokenType.Double){
+                    int32ToByte(8);
+                    doubleToByte(entry.getValue().doubleValue);
+                    instructionList.addAll(entry.getValue().instructionList);
+                }
+                else if(entry.getValue().tokenType==TokenType.String){
+                        int32ToByte(entry.getValue().stringValue.length());
+                        stringToByte(entry.getValue().stringValue);
+                    instructionList.addAll(entry.getValue().instructionList);
+                }
+            }
+            else {
+                int32ToByte(entry.getValue().name.length());
+                stringToByte(entry.getValue().name);
+                instructionList.addAll(entry.getValue().instructionList);
+            }
+        }
+        int32ToByte(FunctionNum+1);
+        // TODO: 2020-12-13 start函数
+
+        int32ToByte(IdentNum);
+        int32ToByte(0);
+        int32ToByte(0);
+        int32ToByte(0);
+        int l=instructions.size();
+        int32ToByte(l);
+        for(int i=0;i<l;i++){
+            instructionToByte(instructions.get(i));
+        }
+
+        for (Map.Entry<String, SymbolEntry> entry : symbolTable.entrySet()) {
+            if(entry.getValue().isFunction){
+                // functions[0]
+                // functions[0].name
+                // functions[0].ret_slots
+                // functions[0].param_slots
+                // functions[0].loc_slots
+                // functions[0].body.count
+                // functions[0].body.items
+                // Push(1)
+                // Push(2)
+                // AddI
+                // NegI
+                int32ToByte(entry.getValue().number);
+                if(entry.getValue().tokenType==TokenType.VOID)
+                    int32ToByte(0);
+                else
+                    int32ToByte(8);
+                int32ToByte(entry.getValue().parameterCount);
+                int32ToByte(entry.getValue().localParameterNum);
+                int32ToByte(entry.getValue().instructionNum);
+                l=entry.getValue().instructionNum;
+                for(int i=0;i<l;i++){
+                    instructionToByte(entry.getValue().instructionList.get(i));
+                }
+            }
+        }
+        out.write(b);
+    }
+
 }
