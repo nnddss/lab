@@ -94,7 +94,28 @@ public enum TokenType {
     TYPE_DOUBLE,
     /** 文件尾 */
     TYPE;
-
+    public  int getPriority(){
+        switch (this){
+            case Plus:
+            case Minus:
+                return 2;
+            case Mult:
+            case Div:
+                return 3;
+            case LParen:return 7;
+            case AS_KW:return 4;
+            case Ident:return 6;
+            case ASSIGN:return 0;
+            case GE:
+            case GT:
+            case LE:
+            case LT:
+            case NEQ:
+            case Equal:
+                return 1;
+            default: return  -1;
+        }
+    }
     @Override
     public String toString() {
         switch (this) {

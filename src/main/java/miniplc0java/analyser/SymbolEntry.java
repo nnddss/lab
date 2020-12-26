@@ -24,15 +24,14 @@ public class SymbolEntry {
     int number;//对于函数需要知道它在全局变量中的位置
     int localParameterNum;
     int instructionNum;
+    int length;
     List<Instruction> instructionList=new ArrayList<>();
-
     /**
      * @param isConstant
      * @param isDeclared
      * @param stackOffset
      */
-    public SymbolEntry(boolean isGlobal,boolean isConstant, boolean isDeclared,boolean isFunction, int stackOffset, String name,TokenType tokenType, Pos pos, int number) {
-
+    public SymbolEntry(boolean isConstant, boolean isDeclared,boolean isFunction, int stackOffset, String name,TokenType tokenType, Pos pos) {
         this.isConstant = isConstant;
         this.isInitialized = isDeclared;
         this.isFunction =isFunction;
@@ -40,42 +39,9 @@ public class SymbolEntry {
         this.tokenType = tokenType;
         this.pos = pos;
         this.name=name;
-        this.number=number;
-        this.isGlobal=isGlobal;
     }
-    public SymbolEntry(boolean isConstant, boolean isDeclared,boolean isFunction, int stackOffset, String name,TokenType tokenType, Pos pos,Double doubleValue) {
+    public SymbolEntry(boolean isDeclared,boolean isFunction, int stackOffset, String name,TokenType tokenType, Pos pos,int parameterCount,List parameterList) {
         this.isConstant = isConstant;
-        this.isInitialized = isDeclared;
-        this.isFunction =isFunction;
-        this.stackOffset = stackOffset;
-        this.tokenType = tokenType;
-        this.pos = pos;
-        this.name=name;
-        this.doubleValue=doubleValue;
-    }
-    public SymbolEntry(boolean isConstant, boolean isDeclared,boolean isFunction, int stackOffset, String name,TokenType tokenType, Pos pos,Long uintValue) {
-        this.isConstant = isConstant;
-        this.isInitialized = isDeclared;
-        this.isFunction =isFunction;
-        this.stackOffset = stackOffset;
-        this.tokenType = tokenType;
-        this.pos = pos;
-        this.name=name;
-        this.uintValue=uintValue;
-    }
-    public SymbolEntry(boolean isConstant, boolean isDeclared,boolean isFunction, int stackOffset, String name,TokenType tokenType, Pos pos,String stringValue) {
-        this.isConstant = isConstant;
-        this.isInitialized = isDeclared;
-        this.isFunction =isFunction;
-        this.stackOffset = stackOffset;
-        this.tokenType = tokenType;
-        this.pos = pos;
-        this.name=name;
-        this.stringValue=stringValue;
-    }
-    public SymbolEntry(boolean isDeclared,boolean isFunction, int stackOffset, String name,TokenType tokenType, Pos pos,
-                       int parameterCount,List parameterList,int localParameterNum,List<Instruction> instructionList) {
-        this.isConstant=true;
         this.isInitialized = isDeclared;
         this.isFunction =isFunction;
         this.stackOffset = stackOffset;
@@ -84,9 +50,6 @@ public class SymbolEntry {
         this.parameterCount=parameterCount;
         this.parameterList=parameterList;
         this.name=name;
-        this.localParameterNum=localParameterNum;
-        this.instructionList=instructionList;
-
     }
     public TokenType getTokenType() {
         return tokenType;

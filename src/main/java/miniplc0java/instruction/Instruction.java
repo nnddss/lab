@@ -76,47 +76,33 @@ package miniplc0java.instruction;
 import java.util.Objects;
 
 public class Instruction {
-    public int opt;
-    public Integer x;
-    public int parameterLength;
-    public Instruction(int opt) {
+    public Operation opt;
+    public int intValue;
+    public long longValue;
+    public double doubleValue;
+    public boolean isLong = false;
+
+    public Instruction(Operation opt) {
         this.opt = opt;
-        this.x = 0;
+
     }
 
-    public Instruction(int opt, Integer x) {
+    public Instruction(Operation opt, int intValue) {
         this.opt = opt;
-        this.x = x;
-        this.parameterLength=getParameterLength(opt);
-    }
-    public int getParameterLength(int opt){
-        switch (opt){
-            case 0x01:return 8;
-            case 0x03:
-            case 0x0a:
-            case 0x0b:
-            case 0x0c:
-            case 0x1a:
-            case 0x41:
-            case 0x42:
-            case 0x43:
-            case 0x48:
-            case 0x4a:
-                return 4;
-            default:
-                return 0;
-        }
+        this.intValue = intValue;
+
     }
 
+    public Instruction(Operation opt, long longValue) {
+        this.opt = opt;
+        this.longValue = longValue;
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
-        Instruction that = (Instruction) o;
-        return opt == that.opt && Objects.equals(x, that.x);
+        this.isLong = true;
+    }
+
+    public Instruction(Operation opt, double doubleValue) {
+        this.opt = opt;
+        this.doubleValue = doubleValue;
     }
 
 
