@@ -892,7 +892,7 @@ public final class Analyser {
         } else if (peekedToken.getTokenType() == TokenType.String) {
             token=next();//strNum在定义时增加了
             defineIdent(token,true,TokenType.String);
-            instructions.add(new Instruction(Operation.push,strNum));
+            instructions.add(new Instruction(Operation.push,strNum-1));
             return TokenType.Uint;
         } else if (peekedToken.getTokenType() == TokenType.Double) {
             token=expect(TokenType.Double);
