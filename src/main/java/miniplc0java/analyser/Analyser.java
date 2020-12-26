@@ -1084,6 +1084,8 @@ public final class Analyser {
         defineFunction(token, tokenType, parameterList.size(), parameterList);
         SymbolEntry symbolEntry=symbolTableList.get(0).get(token.getValueString());
         symbolEntry.instructionList.addAll(instructions);
+        if(type.getValueString()=="void")
+            instructions.add(new Instruction(Operation.ret));
         instructions.clear();
         return tokenType;
     }
@@ -1191,41 +1193,87 @@ public final class Analyser {
     }
 
     private void output(DataOutputStream out) throws CompileError, IOException {
-        List<Instruction> instructionList = new ArrayList<>();
-        symbolTable = symbolTableList.get(0);
+        List<Instruction> instructionList=new ArrayList<>();
+        b=new byte[10000];
+        symbolTable=symbolTableList.get(0);
         int32ToByte(0x72303b3e);
         int32ToByte(0x00000001);
-        int IdentNum = 0, FunctionNum = 0;
+        int IdentNum=0,FunctionNum=0;
         for (Map.Entry<String, SymbolEntry> entry : symbolTable.entrySet()) {
-            if (!entry.getValue().isFunction)
+            if(!entry.getValue().isFunction)
                 IdentNum++;
-            else {
+            else{
                 FunctionNum++;
-                entry.getValue().number = IdentNum + FunctionNum;
+                entry.getValue().number=IdentNum+FunctionNum;
             }
+
         }
         int32ToByte(IdentNum);
         for (Map.Entry<String, SymbolEntry> entry : symbolTable.entrySet()) {
-            if (!entry.getValue().isFunction) {
+            if(!entry.getValue().isFunction){
                 boolToByte(entry.getValue().isConstant);
-                if (entry.getValue().tokenType == TokenType.Uint) {
+                if(entry.getValue().tokenType==TokenType.Uint){
                     int32ToByte(8);
                     int64ToByte(entry.getValue().uintValue);
                     instructionList.addAll(entry.getValue().instructionList);
-                } else if (entry.getValue().tokenType == TokenType.Double) {
+                }
+                else if(entry.getValue().tokenType==TokenType.Double){
                     int32ToByte(8);
                     doubleToByte(entry.getValue().doubleValue);
                     instructionList.addAll(entry.getValue().instructionList);
-                } else if (entry.getValue().tokenType == TokenType.String) {
+                }
+                else if(entry.getValue().tokenType==TokenType.String){
                     int32ToByte(entry.getValue().stringValue.length());
                     stringToByte(entry.getValue().stringValue);
                     instructionList.addAll(entry.getValue().instructionList);
                 }
-            } else {
+            }
+            else {
                 int32ToByte(entry.getValue().name.length());
                 stringToByte(entry.getValue().name);
                 instructionList.addAll(entry.getValue().instructionList);
             }
         }
+        int32ToByte(FunctionNum+1);
+        // TODO: 2020-12-13 start函数
+
+        int32ToByte(IdentNum);
+        int32ToByte(0);
+        int32ToByte(0);
+        int32ToByte(0);
+        int l=instructions.size();
+        int32ToByte(l);
+        for(int i=0;i<l;i++){
+            instructionToByte(instructions.get(i));
+        }
+
+        for (Map.Entry<String, SymbolEntry> entry : symbolTable.entrySet()) {
+            if(entry.getValue().isFunction){
+                // functions[0]
+                // functions[0].name
+                // functions[0].ret_slots
+                // functions[0].param_slots
+                // functions[0].loc_slots
+                // functions[0].body.count
+                // functions[0].body.items
+                // Push(1)
+                // Push(2)
+                // AddI
+                // NegI
+                int32ToByte(entry.getValue().number);
+                if(entry.getValue().tokenType==TokenType.VOID)
+                    int32ToByte(0);
+                else
+                    int32ToByte(8);
+                int32ToByte(entry.getValue().parameterCount);
+                int32ToByte(entry.getValue().localParameterNum);
+                int32ToByte(entry.getValue().instructionNum);
+                l=entry.getValue().instructionNum;
+                for(int i=0;i<l;i++){
+                    instructionToByte(entry.getValue().instructionList.get(i));
+                }
+            }
+        }
+        out.write(b);
     }
 }
