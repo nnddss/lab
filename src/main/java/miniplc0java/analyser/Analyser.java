@@ -162,6 +162,15 @@ public final class Analyser {
             throw new AnalyzeError(ErrorCode.DuplicateDeclaration, token.getStartPos());
         }
     }
+    private boolean firstOfStmt(TokenType tokenType){
+        if(tokenType==TokenType.Minus||tokenType==TokenType.CONTINUE_KW||tokenType==TokenType.BREAK_KW||tokenType==TokenType.L_BRACE||tokenType==TokenType.Semicolon||
+                tokenType==TokenType.IF_KW||tokenType==TokenType.WHILE_KW||tokenType==TokenType.RETURN_KW||tokenType==TokenType.CONST_KW||tokenType==TokenType.LET_KW||
+                tokenType==TokenType.LParen||tokenType==TokenType.Double||tokenType==TokenType.String||tokenType==TokenType.Uint||tokenType==TokenType.Ident)
+            return true;
+        else
+            return false;
+
+    }
 
     private TokenType searchFunction(Token token) throws CompileError {
         //boolean isConstant, boolean isDeclared, int stackOffset,
@@ -917,7 +926,6 @@ public final class Analyser {
 
     private TokenType analyseBlock_stmt() throws CompileError {
         TokenType tokenType = null, returnType;
-        ;
         if (inFunction == false) {
             HashMap<String, SymbolEntry> symbolTable = new HashMap<>();
             symbolTableList.add(symbolTable);
@@ -927,19 +935,19 @@ public final class Analyser {
         }
         expect(TokenType.L_BRACE);
         peek();
-        while (peekedToken.getTokenType() != TokenType.R_BRACE) {
-            if (peekedToken.getTokenType() == TokenType.EOF) {
-                throw new AnalyzeError(ErrorCode.InvalidExpr, peek().getStartPos());
-            }
-            if (peek().getTokenType() == TokenType.RETURN_KW) {
-                returnType = analyseReturn_stmt();
-                if (tokenType == null)
-                    tokenType = returnType;
-                else if (tokenType != returnType) {
-                    throw new AnalyzeError(ErrorCode.TypeDifferent, peek().getStartPos());
-                }
-
-            }
+        while (firstOfStmt(peekedToken.getTokenType())) {
+//            if (peekedToken.getTokenType() == TokenType.EOF) {
+//                throw new AnalyzeError(ErrorCode.InvalidExpr, peek().getStartPos());
+//            }
+//            if (peek().getTokenType() == TokenType.RETURN_KW) {
+//                returnType = analyseReturn_stmt();
+//                if (tokenType == null)
+//                    tokenType = returnType;
+//                else if (tokenType != returnType) {
+//                    throw new AnalyzeError(ErrorCode.TypeDifferent, peek().getStartPos());
+//                }
+//
+//            }
             analyseStmt();
         }
         symbolTableList.remove(listLength);
