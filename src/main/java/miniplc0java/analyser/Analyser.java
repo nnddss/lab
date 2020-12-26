@@ -918,9 +918,10 @@ public final class Analyser {
     private TokenType analyseReturn_stmt() throws CompileError {
         TokenType tokenType = TokenType.VOID;
         expect(TokenType.RETURN_KW);
-        if (nextIf(TokenType.Semicolon) == null)
+        if (nextIf(TokenType.Semicolon) == null){
             tokenType = analyseExpr();
-        expect(TokenType.Semicolon);
+            expect(TokenType.Semicolon);
+        }
         return tokenType;
     }
 
