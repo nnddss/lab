@@ -1,3 +1,0 @@
-miniplc0java.instruction.Instruction@ee7d9f1
-miniplc0java.instruction.Instruction@15615099
-miniplc0java.instruction.Instruction@1edf1c96

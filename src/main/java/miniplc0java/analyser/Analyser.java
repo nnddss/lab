@@ -1060,6 +1060,7 @@ public final class Analyser {
     }
 
     private TokenType analyseFunction() throws CompileError {
+        instructions.clear();
         inFunction = true;
         Token token, type;
         TokenType tokenType;
@@ -1081,6 +1082,9 @@ public final class Analyser {
             throw new AnalyzeError(ErrorCode.TypeDifferent, peek().getStartPos());
 
         defineFunction(token, tokenType, parameterList.size(), parameterList);
+        SymbolEntry symbolEntry=symbolTableList.get(0).get(token.getValueString());
+        symbolEntry.instructionList.addAll(instructions);
+        instructions.clear();
         return tokenType;
     }
 
