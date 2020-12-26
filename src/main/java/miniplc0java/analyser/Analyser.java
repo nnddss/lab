@@ -162,7 +162,14 @@ public final class Analyser {
             throw new AnalyzeError(ErrorCode.DuplicateDeclaration, token.getStartPos());
         }
     }
-    private boolean firstOfStmt(TokenType tokenType){
+    private boolean firstOfStmt() throws TokenizeError {
+        peek();
+        TokenType tokenType;
+        if(peekedToken==null)
+           return false;
+        else {
+            tokenType=peekedToken.getTokenType();
+        }
         if(tokenType==TokenType.Minus||tokenType==TokenType.CONTINUE_KW||tokenType==TokenType.BREAK_KW||tokenType==TokenType.L_BRACE||tokenType==TokenType.Semicolon||
                 tokenType==TokenType.IF_KW||tokenType==TokenType.WHILE_KW||tokenType==TokenType.RETURN_KW||tokenType==TokenType.CONST_KW||tokenType==TokenType.LET_KW||
                 tokenType==TokenType.LParen||tokenType==TokenType.Double||tokenType==TokenType.String||tokenType==TokenType.Uint||tokenType==TokenType.Ident)
@@ -926,7 +933,7 @@ public final class Analyser {
     }
 
     private TokenType analyseBlock_stmt() throws CompileError {
-        TokenType tokenType = null, returnType;
+        TokenType tokenType = TokenType.VOID;
         if (inFunction == false) {
             HashMap<String, SymbolEntry> symbolTable = new HashMap<>();
             symbolTableList.add(symbolTable);
@@ -936,7 +943,7 @@ public final class Analyser {
         }
         expect(TokenType.L_BRACE);
         peek();
-        while (firstOfStmt(peekedToken.getTokenType())) {
+        while (firstOfStmt()) {
 //            if (peekedToken.getTokenType() == TokenType.EOF) {
 //                throw new AnalyzeError(ErrorCode.InvalidExpr, peek().getStartPos());
 //            }
@@ -951,6 +958,7 @@ public final class Analyser {
 //            }
             analyseStmt();
         }
+        expect(TokenType.R_BRACE);
         symbolTableList.remove(listLength);
         listLength--;
 
