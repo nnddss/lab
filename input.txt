@@ -1,3 +1,4 @@
 fn main() -> void {
-    return;
+    putstr("Hello, world!");
+    putln();
 }

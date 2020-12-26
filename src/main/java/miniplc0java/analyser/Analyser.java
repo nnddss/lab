@@ -139,7 +139,7 @@ public final class Analyser {
             symbolEntry.stringValue=token.getValueString();
             symbolTable.put(token.getValueString(), symbolEntry);
         }
-        if (symbolTable.containsKey(token.getValueString()) == false) {
+        else if (symbolTable.containsKey(token.getValueString()) == false) {
             SymbolEntry symbolEntry = new SymbolEntry(isConstant, true, false,
                     nextOffset, token.getValueString(), tokenType, token.getStartPos());
             //nextOffset= (int) (nextOffset+ token.getValue());
@@ -183,9 +183,34 @@ public final class Analyser {
         //boolean isConstant, boolean isDeclared, int stackOffset,
         // TokenType tokenType, Pos pos
         HashMap<String, SymbolEntry> symbolTable = symbolTableList.get(0);
-        if (symbolTable.containsKey(token.getValueString()) == false) {
+        if (token.getValueString().equals("getint")){
+            return TokenType.Uint;
+        }
+        else if (token.getValueString().equals("getdouble")){
+            return TokenType.Double;
+        }
+        else if (token.getValueString().equals("getchar")){
+            return TokenType.Uint;
+        }
+
+        else if (token.getValueString().equals("putint")) {
+            return TokenType.VOID;
+        }
+        else if (token.getValueString().equals("putdouble")) {
+            return TokenType.VOID;
+        }
+        else if (token.getValueString().equals("putstr")) {
+            return TokenType.VOID;
+        }
+        else if (token.getValueString().equals("putchar")) {
+            return TokenType.VOID;
+        }
+        else if (token.getValueString().equals("putln")) {
+            return TokenType.VOID;
+        }
+        else if (symbolTable.containsKey(token.getValueString()) == false) {
             throw new AnalyzeError(ErrorCode.NotDeclared, token.getStartPos());
-        } else
+        }
             return symbolTable.get(token.getValueString()).getTokenType();
     }
 
@@ -212,7 +237,7 @@ public final class Analyser {
                 return symbolTable.get(token.getValueString()).getTokenType();
             }
         }
-        throw new AnalyzeError(ErrorCode.NotDeclared, token.getStartPos());
+        return null ;
     }
 
     /**
@@ -764,6 +789,7 @@ public final class Analyser {
             instructions.add(new Instruction(Operation.store64));
         } else if (nextIf(TokenType.LParen) != null) {//函数调用
             TokenType tokenType = searchFunction(Ident);
+
             int k=upperPriority;
             upperPriority=0;
             analyseCall_Expr(Ident);
@@ -771,13 +797,77 @@ public final class Analyser {
             return tokenType;
         }
         TokenType tokenType=searchGlobal(Ident);
+        if(tokenType==null){
+
+        }
         instructions.add(new Instruction(Operation.load64));
         return tokenType;
     }
 
     private void analyseCall_Expr(Token token) throws CompileError {
-        analyseCallParamList();
-        expect(TokenType.RParen);
+        if (token.getValueString().equals("getint")){
+            expect(TokenType.RParen);
+            instructions.add(new Instruction(Operation.scan_i));
+            return;
+        }
+        else if (token.getValueString().equals("getdouble")){
+            expect(TokenType.RParen);
+            instructions.add(new Instruction(Operation.scan_f));
+            return;
+        }
+        else if (token.getValueString().equals("getchar")){
+            expect(TokenType.RParen);
+            instructions.add(new Instruction(Operation.scan_c));
+            return;
+        }
+
+        else if (token.getValueString().equals("putint")) {
+
+            if (analyseExpr()!=TokenType.Uint)
+                throw new AnalyzeError(ErrorCode.TypeDifferent,token.getStartPos());
+            instructions.add(new Instruction(Operation.print_i));
+            expect(TokenType.RParen);
+            return;
+        }
+        else if (token.getValueString().equals("putdouble")) {
+            if (analyseExpr()!=TokenType.Double)
+                throw new AnalyzeError(ErrorCode.TypeDifferent,token.getStartPos());
+            instructions.add(new Instruction(Operation.print_f));
+            expect(TokenType.RParen);
+            return;
+        }
+        else if (token.getValueString().equals("putstr")) {
+            if (analyseExpr()!=TokenType.Uint)
+                throw new AnalyzeError(ErrorCode.TypeDifferent,token.getStartPos());
+            instructions.add(new Instruction(Operation.print_s));
+            expect(TokenType.RParen);
+            return;
+        }
+        else if (token.getValueString().equals("putchar")) {
+            if (analyseExpr()!=TokenType.Uint)
+                throw new AnalyzeError(ErrorCode.TypeDifferent,token.getStartPos());
+            instructions.add(new Instruction(Operation.print_c));
+            expect(TokenType.RParen);
+            return;
+        }
+        else if (token.getValueString().equals("putln")) {
+            instructions.add(new Instruction(Operation.println));
+            expect(TokenType.RParen);
+            return;
+        }
+        else {
+            instructions.add(new Instruction(Operation.stackAlloc,searchFunction(token)==TokenType.VOID?0:1));
+            SymbolEntry symbolEntry=symbolTableList.get(0).get(token.getValueString());
+            for (int i=0;i<symbolEntry.parameterCount;i++){
+                if (i!=0)
+                    expect(TokenType.COMMA);
+                analyseExpr();
+            }
+            instructions.add(new Instruction(Operation.call,symbolEntry.number));
+            expect(TokenType.RParen);
+            return;
+        }
+
     }
 
 
@@ -800,10 +890,10 @@ public final class Analyser {
                 instructions.add(new Instruction(Operation.push,(int)token.getValue()));
             return TokenType.Uint;
         } else if (peekedToken.getTokenType() == TokenType.String) {
-            token=expect(TokenType.String);//strNum在定义时增加了
+            token=next();//strNum在定义时增加了
             defineIdent(token,true,TokenType.String);
             instructions.add(new Instruction(Operation.push,strNum));
-            return TokenType.String;
+            return TokenType.Uint;
         } else if (peekedToken.getTokenType() == TokenType.Double) {
             token=expect(TokenType.Double);
             instructions.add(new Instruction(Operation.push,(Double)token.getValue()));// TODO: 2020-12-25 ?

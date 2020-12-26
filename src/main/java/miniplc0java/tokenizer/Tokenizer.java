@@ -104,39 +104,48 @@ public class Tokenizer {
         //
         // Token 的 Value 应填写数字的值
         //throw new Error("Not implemented");
-        Pos startPos = new Pos(it.currentPos().row,it.currentPos().col);
-        StringBuffer stringBuffer=new StringBuffer();
-        char now;
-        boolean isEscape = false;
-        while(true){
-            now=it.nextChar();
-            if(isEscape==true){
-                isEscape=false;
-                switch (now){
-                    case 'n': now='\n';break;
-                    case '\'': now='\'';break;
-                    case '\"': now='\"';break;
-                    case '\\': now='\\';break;
-                    case 'r': now='\r';break;
-                    case 't': now='\t';break;
-                    default:throw new TokenizeError(IllegalEscapeCharacter, it.currentPos());
+        StringBuilder stringBuilder = new StringBuilder();
+        Pos start = it.currentPos();
+        it.nextChar();
+        while(!it.isEOF()) {
+            char peek = it.peekChar();
+            if (peek == '\\') {
+//                stringBuilder.append(it.nextChar());
+                it.nextChar();
+                peek = it.peekChar();
+                switch (peek) {
+                    case '\'':
+                        stringBuilder.append('\'');
+                        break;
+                    case '\"':
+                        stringBuilder.append('\"');
+                        break;
+                    case '\\':
+                        stringBuilder.append('\\');
+                        break;
+                    case 'n':
+                        stringBuilder.append('\n');
+                        break;
+                    case 't':
+                        stringBuilder.append('\t');
+                        break;
+                    case 'r':
+                        stringBuilder.append('\r');
+                        break;
+                    default:
+                        throw new TokenizeError(ErrorCode.InvalidInput,it.currentPos());
                 }
-            }
-            else if(now=='\\'){
-                isEscape=true;
-                continue;
-            }
-            if(now=='\"'&&isEscape==false){
+                it.nextChar();
+            } else if (peek == '\"') {
+                it.nextChar();
                 break;
-            }
-            else{
-                stringBuffer.append(now);
+            } else {
+                stringBuilder.append(it.nextChar());
             }
         }
-
-        Pos endPos = new Pos(it.currentPos().row,it.currentPos().col);
-        Token token=new Token(TokenType.String,stringBuffer, startPos, endPos);
-        return token;
+        String result = stringBuilder.toString();
+        Pos end = it.currentPos();
+        return new Token(TokenType.String, result, start, end);
     }
     private Token lexChar() throws TokenizeError {
         // 请填空：
