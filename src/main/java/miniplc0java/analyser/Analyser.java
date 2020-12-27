@@ -1203,7 +1203,7 @@ public final class Analyser {
 
     private void output(DataOutputStream out) throws CompileError, IOException {
         List<Instruction> instructionList=new ArrayList<>();
-        b = new byte[104];
+        b = new byte[1000];
         symbolTable=symbolTableList.get(0);
         int32ToByte(0x72303b3e);
         int32ToByte(0x00000001);
