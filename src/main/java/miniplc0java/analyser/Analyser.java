@@ -1177,7 +1177,6 @@ public final class Analyser {
             b[i + start] = (byte) ((value >> 8 * i) & 0xff);
         }
         start = start + 8;
-
     }
 
     private void boolToByte(boolean i) {
