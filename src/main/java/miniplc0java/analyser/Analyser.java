@@ -137,7 +137,7 @@ public final class Analyser {
             //nextOffset= (int) (nextOffset+ token.getValue());
             symbolEntry.length=token.getValueString().length();
             symbolEntry.stringValue=token.getValueString();
-            symbolTable.put(token.getValueString(), symbolEntry);
+            symbolTableList.get(0).put(token.getValueString(), symbolEntry);
         }
         else if (symbolTable.containsKey(token.getValueString()) == false) {
             SymbolEntry symbolEntry = new SymbolEntry(isConstant, true, false,
@@ -1083,9 +1083,10 @@ public final class Analyser {
 
         defineFunction(token, tokenType, parameterList.size(), parameterList);
         SymbolEntry symbolEntry=symbolTableList.get(0).get(token.getValueString());
-        symbolEntry.instructionList.addAll(instructions);
-        if(type.getValueString()=="void")
+        symbolEntry.number=symbolTableList.get(0).size()-1;
+        if(tokenType==TokenType.VOID)
             instructions.add(new Instruction(Operation.ret));
+        symbolEntry.instructionList.addAll(instructions);
         instructions.clear();
         return tokenType;
     }
@@ -1125,6 +1126,10 @@ public final class Analyser {
         nextOffset = 0;
         instructions = new ArrayList<>();
         peekedToken = peek();
+        Token _start=new Token(TokenType.None,"_start",new Pos(0,0),new Pos(0,0));
+        defineFunction(_start,TokenType.None,0,null);
+        SymbolEntry symbolEntry=symbolTable.get("_start");
+
         while (peekedToken.getTokenType() == TokenType.LET_KW ||
                 peekedToken.getTokenType() == TokenType.FN_KW) {
             if (peekedToken.getTokenType() == TokenType.LET_KW)
@@ -1135,6 +1140,7 @@ public final class Analyser {
         }
         Token token = new Token(TokenType.Ident, "main", null, null);
         searchFunction(token);
+        symbolEntry.instructionList.add(new Instruction(Operation.call,symbolTableList.get(0).get("main").number));
         DataOutputStream out = new DataOutputStream(new FileOutputStream("output.txt"));
         output(out);
         out.close();
@@ -1194,7 +1200,7 @@ public final class Analyser {
 
     private void output(DataOutputStream out) throws CompileError, IOException {
         List<Instruction> instructionList=new ArrayList<>();
-        b=new byte[10000];
+        b=new byte[100000];
         symbolTable=symbolTableList.get(0);
         int32ToByte(0x72303b3e);
         int32ToByte(0x00000001);
@@ -1202,14 +1208,20 @@ public final class Analyser {
         for (Map.Entry<String, SymbolEntry> entry : symbolTable.entrySet()) {
             if(!entry.getValue().isFunction)
                 IdentNum++;
-            else{
+            else {
                 FunctionNum++;
                 entry.getValue().number=IdentNum+FunctionNum;
             }
 
         }
-        int32ToByte(IdentNum);
+        int32ToByte(IdentNum+FunctionNum);//开始压入全局变量
         for (Map.Entry<String, SymbolEntry> entry : symbolTable.entrySet()) {
+            if(entry.getValue().name=="_start"){
+                boolToByte(true);
+                int32ToByte(8);
+                int64ToByte(0);
+            }
+
             if(!entry.getValue().isFunction){
                 boolToByte(entry.getValue().isConstant);
                 if(entry.getValue().tokenType==TokenType.Uint){
@@ -1228,27 +1240,28 @@ public final class Analyser {
                     instructionList.addAll(entry.getValue().instructionList);
                 }
             }
-            else {
-                int32ToByte(entry.getValue().name.length());
-                stringToByte(entry.getValue().name);
-                instructionList.addAll(entry.getValue().instructionList);
-            }
+//            else {
+//                int32ToByte(entry.getValue().name.length());
+//                stringToByte(entry.getValue().name);
+//                instructionList.addAll(entry.getValue().instructionList);
+//            }
         }
-        int32ToByte(FunctionNum+1);
+        int32ToByte(FunctionNum);
         // TODO: 2020-12-13 start函数
-
+        int l;
         int32ToByte(IdentNum);
         int32ToByte(0);
         int32ToByte(0);
         int32ToByte(0);
-        int l=instructions.size();
+        l=instructions.size();
         int32ToByte(l);
         for(int i=0;i<l;i++){
             instructionToByte(instructions.get(i));
         }
+        instructionToByte(new Instruction(Operation.call,symbolTableList.get(0).get("main").number));
 
         for (Map.Entry<String, SymbolEntry> entry : symbolTable.entrySet()) {
-            if(entry.getValue().isFunction){
+            if(entry.getValue().isFunction&&entry.getValue().name!="_start"){
                 // functions[0]
                 // functions[0].name
                 // functions[0].ret_slots
@@ -1260,7 +1273,7 @@ public final class Analyser {
                 // Push(2)
                 // AddI
                 // NegI
-                int32ToByte(entry.getValue().number);
+                int32ToByte(0);
                 if(entry.getValue().tokenType==TokenType.VOID)
                     int32ToByte(0);
                 else
@@ -1268,7 +1281,7 @@ public final class Analyser {
                 int32ToByte(entry.getValue().parameterCount);
                 int32ToByte(entry.getValue().localParameterNum);
                 int32ToByte(entry.getValue().instructionNum);
-                l=entry.getValue().instructionNum;
+                l=entry.getValue().instructionList.size();
                 for(int i=0;i<l;i++){
                     instructionToByte(entry.getValue().instructionList.get(i));
                 }
