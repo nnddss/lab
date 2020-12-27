@@ -31,6 +31,8 @@ public class SymbolEntry {
      * @param isDeclared
      * @param stackOffset
      */
+    public SymbolEntry() {
+    }
     public SymbolEntry(boolean isConstant, boolean isDeclared,boolean isFunction, int stackOffset, String name,TokenType tokenType, Pos pos) {
         this.isConstant = isConstant;
         this.isInitialized = isDeclared;
