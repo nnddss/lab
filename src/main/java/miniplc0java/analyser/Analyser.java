@@ -43,7 +43,7 @@ public final class Analyser {
     byte b[];
     int start = 0;
     int listLength;
-
+    int IdentNum=0,FunctionNum=0;
     boolean Neg = false;
     int upperPriority = 0;
     /**
@@ -128,7 +128,7 @@ public final class Analyser {
     private void defineIdent(Token token, boolean isConstant, TokenType tokenType) throws CompileError {
         //boolean isConstant, boolean isDeclared, int stackOffset,
         // TokenType tokenType, Pos pos
-
+        IdentNum++;
         HashMap<String, SymbolEntry> symbolTable = symbolTableList.get(listLength);
         if(tokenType==TokenType.String){
             strNum++;
@@ -138,12 +138,14 @@ public final class Analyser {
             symbolEntry.length=token.getValueString().length();
             symbolEntry.stringValue=token.getValueString();
             symbolTableList.get(0).put(token.getValueString(), symbolEntry);
+            symbolEntry.number=IdentNum-1;
         }
         else if (symbolTable.containsKey(token.getValueString()) == false) {
             SymbolEntry symbolEntry = new SymbolEntry(isConstant, true, false,
                     nextOffset, token.getValueString(), tokenType, token.getStartPos());
             //nextOffset= (int) (nextOffset+ token.getValue());
             symbolTable.put(token.getValueString(), symbolEntry);
+            symbolEntry.number=IdentNum-1;
         } else {
             throw new AnalyzeError(ErrorCode.DuplicateDeclaration, token.getStartPos());
         }
@@ -152,12 +154,14 @@ public final class Analyser {
     private void defineFunction(Token token, TokenType tokenType, int parameterCount, List parameterList) throws CompileError {
         //boolean isConstant, boolean isDeclared, int stackOffset,
         // TokenType tokenType, Pos pos
+        FunctionNum++;
         HashMap<String, SymbolEntry> symbolTable = symbolTableList.get(0);
         if (symbolTable.containsKey(token.getValueString()) == false) {
             SymbolEntry symbolEntry = new SymbolEntry(true, true,
                     nextOffset, token.getValueString(), tokenType, token.getStartPos(), parameterCount, parameterList);
             //nextOffset= (int) (nextOffset+ instrumentation.getObjectSize(token.getValue()));
             symbolTable.put(token.getValueString(), symbolEntry);
+            symbolEntry.number=FunctionNum-1;
         } else {
             throw new AnalyzeError(ErrorCode.DuplicateDeclaration, token.getStartPos());
         }
@@ -892,7 +896,7 @@ public final class Analyser {
         } else if (peekedToken.getTokenType() == TokenType.String) {
             token=next();//strNum在定义时增加了
             defineIdent(token,true,TokenType.String);
-            instructions.add(new Instruction(Operation.push,strNum-1));
+            instructions.add(new Instruction(Operation.push,(long)strNum));
             return TokenType.Uint;
         } else if (peekedToken.getTokenType() == TokenType.Double) {
             token=expect(TokenType.Double);
@@ -1083,7 +1087,7 @@ public final class Analyser {
 
         defineFunction(token, tokenType, parameterList.size(), parameterList);
         SymbolEntry symbolEntry=symbolTableList.get(0).get(token.getValueString());
-        symbolEntry.number=symbolTableList.get(0).size()-1;
+
         if(tokenType==TokenType.VOID)
             instructions.add(new Instruction(Operation.ret));
         symbolEntry.instructionList.addAll(instructions);
@@ -1204,17 +1208,20 @@ public final class Analyser {
         symbolTable=symbolTableList.get(0);
         int32ToByte(0x72303b3e);
         int32ToByte(0x00000001);
-        int IdentNum=0,FunctionNum=0;
-        for (Map.Entry<String, SymbolEntry> entry : symbolTable.entrySet()) {
-            if(!entry.getValue().isFunction)
-                IdentNum++;
-            else {
-                FunctionNum++;
-                entry.getValue().number=IdentNum+FunctionNum;
-            }
 
-        }
-        int32ToByte(IdentNum+FunctionNum);//开始压入全局变量
+//        for (Map.Entry<String, SymbolEntry> entry : symbolTable.entrySet()) {
+//            if(!entry.getValue().isFunction){
+//                IdentNum++;
+//                entry.getValue().number=IdentNum;
+//            }
+//
+//            else {
+//                FunctionNum++;
+//                entry.getValue().number=FunctionNum-1;
+//            }
+//
+//        }
+        int32ToByte(IdentNum+1);//开始压入全局变量
         for (Map.Entry<String, SymbolEntry> entry : symbolTable.entrySet()) {
             if(entry.getValue().name=="_start"){
                 boolToByte(true);
@@ -1248,17 +1255,18 @@ public final class Analyser {
         }
         int32ToByte(FunctionNum);
         // TODO: 2020-12-13 start函数
+
         int l;
-        int32ToByte(IdentNum);
         int32ToByte(0);
         int32ToByte(0);
         int32ToByte(0);
-        l=instructions.size();
+        int32ToByte(0);
+        l=symbolTableList.get(0).get("_start").instructionList.size();
         int32ToByte(l);
         for(int i=0;i<l;i++){
-            instructionToByte(instructions.get(i));
+            instructionToByte(symbolTableList.get(0).get("_start").instructionList.get(i));
         }
-        instructionToByte(new Instruction(Operation.call,symbolTableList.get(0).get("main").number));
+//        instructionToByte(new Instruction(Operation.call,symbolTableList.get(0).get("main").number));
 
         for (Map.Entry<String, SymbolEntry> entry : symbolTable.entrySet()) {
             if(entry.getValue().isFunction&&entry.getValue().name!="_start"){
@@ -1280,7 +1288,7 @@ public final class Analyser {
                     int32ToByte(8);
                 int32ToByte(entry.getValue().parameterCount);
                 int32ToByte(entry.getValue().localParameterNum);
-                int32ToByte(entry.getValue().instructionNum);
+                int32ToByte(entry.getValue().instructionList.size());
                 l=entry.getValue().instructionList.size();
                 for(int i=0;i<l;i++){
                     instructionToByte(entry.getValue().instructionList.get(i));
