@@ -40,7 +40,7 @@ public final class Analyser {
      * 符号表集
      */
     List<HashMap<String, SymbolEntry>> symbolTableList;
-    byte b[];
+    public byte[] b;
     int start = 0;
     int listLength;
     int IdentNum=0,FunctionNum=0;

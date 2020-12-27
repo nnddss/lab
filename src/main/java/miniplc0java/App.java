@@ -99,6 +99,8 @@ public class App {
             List<Instruction> instructions;
             try {
                 instructions = analyzer.analyse();
+                output.write(analyzer.b);
+
             } catch (Exception e) {
                 // 遇到错误不输出，直接退出
                 output.println(e.toString());
