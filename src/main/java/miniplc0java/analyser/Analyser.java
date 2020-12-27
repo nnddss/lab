@@ -1125,7 +1125,7 @@ public final class Analyser {
         symbolTableList = new ArrayList<>();
         symbolTableList.add(symbolTable);
         listLength = 0;
-        b = new byte[100000];
+        b = new byte[104];
         /** 下一个变量的栈偏移 */
         nextOffset = 0;
         instructions = new ArrayList<>();
@@ -1204,7 +1204,7 @@ public final class Analyser {
 
     private void output(DataOutputStream out) throws CompileError, IOException {
         List<Instruction> instructionList=new ArrayList<>();
-        b=new byte[100000];
+        b = new byte[104];
         symbolTable=symbolTableList.get(0);
         int32ToByte(0x72303b3e);
         int32ToByte(0x00000001);
