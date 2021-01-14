@@ -46,6 +46,7 @@ public final class Analyser {
     int IdentNum=0,FunctionNum=0;
     boolean Neg = false;
     int upperPriority = 0;
+    String curFunction;
     /**
      * 下一个变量的栈偏移
      */
@@ -1057,18 +1058,26 @@ public final class Analyser {
 
     }
 
-    private TokenType analyseReturn_stmt() throws CompileError {
-        TokenType tokenType = TokenType.VOID;
-        expect(TokenType.RETURN_KW);
-        if (nextIf(TokenType.Semicolon) == null){
-            tokenType = analyseExpr();
+    private void analyseReturn_stmt() throws CompileError {
+        Token token = expect(TokenType.RETURN_KW);
+        if (symbolTableList.get(0).get(curFunction).tokenType==TokenType.VOID){
+            instructions.add(new Instruction(Operation.ret));
             expect(TokenType.Semicolon);
+            return;
         }
-        return tokenType;
+        instructions.add(new Instruction(Operation.arga,0));
+        TokenType tokenType = analyseExpr();
+        if (tokenType!=symbolTableList.get(0).get(curFunction).tokenType)
+            throw new AnalyzeError(ErrorCode.TypeDifferent,token.getStartPos());
+
+        if (symbolTableList.get(0).get(curFunction).tokenType!=TokenType.VOID)
+            instructions.add(new Instruction(Operation.store64));
+        expect(TokenType.Semicolon);
+        instructions.add(new Instruction(Operation.ret));
     }
 
-    private TokenType analyseBlock_stmt(Token fn) throws CompileError {
-        TokenType tokenType = TokenType.VOID;
+    private void analyseBlock_stmt(Token fn) throws CompileError {
+
         if (inFunction == false) {
             HashMap<String, SymbolEntry> symbolTable = new HashMap<>();
             symbolTableList.add(symbolTable);
@@ -1099,9 +1108,6 @@ public final class Analyser {
             symbolTableList.remove(listLength);
             listLength--;
           }
-
-
-        return tokenType;
     }
 
     private void analyseEmpty_stmt() throws CompileError {
@@ -1126,21 +1132,20 @@ public final class Analyser {
         expect(TokenType.RParen);
         expect(TokenType.ARROW);
         type = expect(TokenType.TYPE);
-        tokenType = analyseBlock_stmt(token);
-        if (tokenType != getTokenTypeOfUintOrDouble(type))
-            throw new AnalyzeError(ErrorCode.TypeDifferent, peek().getStartPos());
+        defineFunction(token, getTokenTypeOfUintOrDouble(type), parameterList.size(), parameterList);
+        curFunction=token.getValueString();
+        analyseBlock_stmt(token);
 
-        defineFunction(token, tokenType, parameterList.size(), parameterList);
         SymbolEntry symbolEntry=symbolTableList.get(0).get(token.getValueString());
 
-        if(tokenType==TokenType.VOID)
+        if(getTokenTypeOfUintOrDouble(type)==TokenType.VOID)
             instructions.add(new Instruction(Operation.ret));
         symbolEntry.instructionList.addAll(instructions);
         symbolEntry.localParameterNum=symbolTableList.get(listLength).size();
         symbolTableList.remove(listLength);
         listLength--;
         instructions.clear();
-        return tokenType;
+        return getTokenTypeOfUintOrDouble(type);
     }
 
     private List<TokenType> analyseFunctionParamList() throws CompileError {
@@ -1203,6 +1208,7 @@ public final class Analyser {
         DataOutputStream out = new DataOutputStream(new FileOutputStream("output.txt"));
         output(out);
         out.close();
+
     }
 
     private void int32ToByte(int i) {
@@ -1344,6 +1350,7 @@ public final class Analyser {
                 int32ToByte(entry.getValue().localParameterNum);
                 int32ToByte(entry.getValue().instructionList.size());
                 l=entry.getValue().instructionList.size();
+                System.out.println(l);
                 for(int i=0;i<l;i++){
                     instructionToByte(entry.getValue().instructionList.get(i));
                 }
