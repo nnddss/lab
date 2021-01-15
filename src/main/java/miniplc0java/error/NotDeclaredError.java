@@ -2,20 +2,19 @@ package miniplc0java.error;
 
 import miniplc0java.util.Pos;
 
-public class TokenizeError extends CompileError {
-    // auto-generated
+public class NotDeclaredError extends CompileError{
     private static final long serialVersionUID = 1L;
 
-    private ErrorCode err;
+    private ErrorCode err ;
     private Pos pos;
 
-    public TokenizeError(ErrorCode err, Pos pos) {
+    public NotDeclaredError(ErrorCode err, Pos pos) {
         super();
         this.err = err;
         this.pos = pos;
     }
 
-    public TokenizeError(ErrorCode err, Integer row, Integer col) {
+    public NotDeclaredError(ErrorCode err, Integer row, Integer col) {
         super();
         this.err = err;
         this.pos = new Pos(row, col);

@@ -1,17 +1,17 @@
 package miniplc0java.tokenizer;
 
+import miniplc0java.util.Pos;
+
 import java.util.ArrayList;
 import java.util.Optional;
 import java.util.Scanner;
-
-import miniplc0java.util.Pos;
 
 /**
  * 这是一个从 C++ 版本抄过来的字符迭代器
  */
 public class StringIter {
     // 以行为基础的缓冲区
-    ArrayList<String> linesBuffer = new ArrayList<>();
+    public ArrayList<String> linesBuffer = new ArrayList<>();
 
     Scanner scanner;
     // 指向下一个要读取的字符

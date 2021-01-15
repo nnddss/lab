@@ -1,8 +1,55 @@
 package miniplc0java.tokenizer;
 
 public enum TokenType {
-    /** 空 */
-    None,
+    nop,
+    FN_KW,
+    LET_KW,
+    CONST_KW,
+    AS_KW,
+    WHILE_KW,
+    IF_KW,
+    ELSE_KW,
+    RETURN_KW,
+    BREAK_KW,
+    CONTINUE_KW,
+
+    UINT_LITERAL,
+    STRING_LITERAL,
+    DOUBLE_LITERAL,
+    CHAR_LITERAL,
+
+    IDENT,
+
+    PLUS     ,
+    MINUS    ,
+    MUL      ,
+    DIV      ,
+    ASSIGN   ,
+    EQ       ,
+    NEQ      ,
+    LT       ,
+    GT       ,
+    LE       ,
+    GE       ,
+    L_PAREN  ,
+    R_PAREN  ,
+    L_BRACE  ,
+    R_BRACE  ,
+    ARROW    ,
+    COMMA    ,
+    COLON    ,
+    SEMICOLON,
+
+    COMMENT,
+
+    EOF,
+
+
+//
+//
+//
+//    /** 空 */
+//    None,
 //    /** 无符号整数 */
 //    Uint,
 //    /** 标识符 */
@@ -17,187 +64,64 @@ public enum TokenType {
 //    Const,
 //    /** Print */
 //    Print,
-    /** 无符号整数 */
-    Uint,
-    /** 浮点数常量 */
-    Double,
-    /** 标识符 */
-    Ident,
-    /** fn */
-    FN_KW,
-    /** let */
-    LET_KW,
-    /** const */
-    CONST_KW,
-    /** as */
-    AS_KW,
-    /** while */
-    WHILE_KW,
-    /** if */
-    IF_KW,
-    /** else */
-    ELSE_KW,
-    /** return */
-    RETURN_KW,
-    /** break */
-    BREAK_KW,
-    /** continue */
-    CONTINUE_KW,
-    /** String */
-    String,
-    /** 加号 */
-    Plus,
-    /** 减号 */
-    Minus,
-    /** 乘号 */
-    Mult,
-    /** 除号 */
-    Div,
-    /** 两个等号 */
-    Equal,
-    /** 等号（赋值） */
-    ASSIGN,
-    /** != */
-    NEQ,
-    /** < */
-    LT,
-    /** > */
-    GT,
-    /** <= */
-    LE,
-    /** >= */
-    GE,
-    /** 分号 */
-    Semicolon,
-    /** 左括号 */
-    LParen,
-    /** 右括号 */
-    RParen,
-    /** { */
-    L_BRACE,
-    /** } */
-    R_BRACE,
-    /** -> */
-    ARROW,
-    /** , */
-    COMMA,
-    /** : */
-    COLON,
-    /** char */
-    Char,
-    /** 文件尾 */
-    EOF,
-    /** void */
-    VOID,
-    /** Type_int*/
-    TYPE_INT,
-    TYPE_DOUBLE,
-    /** 文件尾 */
-    TYPE;
-    public  int getPriority(){
-        switch (this){
-            case Plus:
-            case Minus:
-                return 2;
-            case Mult:
-            case Div:
-                return 3;
-            case LParen:return 7;
-            case AS_KW:return 4;
-            case Ident:return 6;
-            case ASSIGN:return 0;
-            case GE:
-            case GT:
-            case LE:
-            case LT:
-            case NEQ:
-            case Equal:
-                return 1;
-            default: return  -1;
-        }
-    }
-    @Override
-    public String toString() {
-        switch (this) {
-            case None:
-                return "none";
-            case Uint:
-                return "uint";
-            case Char:
-                return "char";
-            case Double:
-                return "double";
-            case FN_KW:
-                return "fn";
-            case LET_KW:
-                return "let";
-            case CONST_KW:
-                return "const";
-            case WHILE_KW:
-                return "while";
-            case IF_KW:
-                return "if";
-            case ELSE_KW:
-                return "else";
-            case RETURN_KW:
-                return "return";
-            case BREAK_KW:
-                return "break";
-            case CONTINUE_KW:
-                return "continue";
-            case AS_KW:
-                return "as";
-            case String:
-                return "string";
-            case Div:
-                return "DivisionSign";
-            case Equal:
-                return "Equal";
-            case Ident:
-                return "Identifier";
-            case LParen:
-                return "LeftBracket";
-            case Minus:
-                return "MinusSign";
-            case Mult:
-                return "MultiplicationSign";
-            case Plus:
-                return "PlusSign";
-            case RParen:
-                return "RightBracket";
-            case Semicolon:
-                return "Semicolon";
-            case ASSIGN:
-                return "Assign";
-            case NEQ:
-                return "Not Equal";
-            case LT:
-                return "Less than";
-            case GT:
-                return "Greater than";
-            case LE:
-                return "Less or equal";
-            case GE :
-                return "Greater or equal";
-            case L_BRACE:
-                return "L_Brace";
-            case R_BRACE :
-                return "R_Brace";
-            case ARROW :
-                return "Arrow";
-            case COMMA :
-                return "Comma";
-            case COLON :
-                return "Colon";
-            case VOID:
-                return "void";
-            case TYPE_DOUBLE:
-                return "type_double";
-            case TYPE_INT:
-                return "type_int";
+//    /** 加号 */
+//    Plus,
+//    /** 减号 */
+//    Minus,
+//    /** 乘号 */
+//    Mult,
+//    /** 除号 */
+//    Div,
+//    /** 等号 */
+//    Equal,
+//    /** 分号 */
+//    Semicolon,
+//    /** 左括号 */
+//    LParen,
+//    /** 右括号 */
+//    RParen,
+//    /** 文件尾 */
+//    EOF;
 
-            default:
-                return "InvalidToken";
-        }
-    }
+//    @Override
+//    public String toString() {
+//        switch (this) {
+//            case None:
+//                return "NullToken";
+//            case Begin:
+//                return "Begin";
+//            case Const:
+//                return "Const";
+//            case Div:
+//                return "DivisionSign";
+//            case EOF:
+//                return "EOF";
+//            case End:
+//                return "End";
+//            case Equal:
+//                return "EqualSign";
+//            case Ident:
+//                return "Identifier";
+//            case LParen:
+//                return "LeftBracket";
+//            case Minus:
+//                return "MinusSign";
+//            case Mult:
+//                return "MultiplicationSign";
+//            case Plus:
+//                return "PlusSign";
+//            case Print:
+//                return "Print";
+//            case RParen:
+//                return "RightBracket";
+//            case Semicolon:
+//                return "Semicolon";
+//            case Uint:
+//                return "UnsignedInteger";
+//            case Var:
+//                return "Var";
+//            default:
+//                return "InvalidToken";
+//        }
+//    }
 }

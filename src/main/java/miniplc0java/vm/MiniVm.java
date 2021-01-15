@@ -27,15 +27,15 @@ public class MiniVm {
     private ArrayList<Integer> stack = new ArrayList<>();
 
     private int ip;
-//
-//    public void Run() {a
-//        ip = 0
-//        while (ip < instructions.size()) {
-//            var inst = instructions.get(ip);
-//            RunStep(inst);
-//            ip++;
-//        }
-//    }
+
+    public void Run() {
+        ip = 0;
+        while (ip < instructions.size()) {
+            var inst = instructions.get(ip);
+            RunStep(inst);
+            ip++;
+        }
+    }
 
     private Integer pop() {
         var val = this.stack.get(this.stack.size() - 1);
@@ -47,7 +47,7 @@ public class MiniVm {
         this.stack.add(i);
     }
 
-//    private void RunStep(Instruction inst) {
+    private void RunStep(Instruction inst) {
 //        switch (inst.getOpt()) {
 //            case ADD: {
 //                var a = pop();
@@ -99,5 +99,5 @@ public class MiniVm {
 //                break;
 //
 //        }
-//    }
+    }
 }

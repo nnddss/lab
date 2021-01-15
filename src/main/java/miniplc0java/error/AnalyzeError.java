@@ -1,5 +1,4 @@
 package miniplc0java.error;
-
 import miniplc0java.util.Pos;
 
 public class AnalyzeError extends CompileError {
