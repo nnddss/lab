@@ -103,7 +103,6 @@ public class Instruction {
             case scan_c:return "51";
             case scan_i:return "50";
             case scan_f:return "52";
-//                return String.format("%s", this.opt);
             case push:{
                 if (push_flag){
                     return String.format("%s%016x", "01", Double.doubleToLongBits(push_x));
@@ -129,16 +128,6 @@ public class Instruction {
             switch (this.opt) {
                 case nop1:
                 case nop2:
-            case add_i:
-            case sub_i:
-            case mul_i:
-            case div_i:
-            case add_f:
-            case sub_f:
-            case mul_f:
-            case div_f:
-            case xor:
-            case not:
             case cmp_i:
             case cmp_u:
             case cmp_f:
@@ -157,6 +146,16 @@ public class Instruction {
             case scan_c:
             case scan_i:
             case scan_f:
+                case add_i:
+                case sub_i:
+                case mul_i:
+                case div_i:
+                case add_f:
+                case sub_f:
+                case mul_f:
+                case div_f:
+                case xor:
+                case not:
                 return String.format("%s%n", this.opt);
             case push:
             {
