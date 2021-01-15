@@ -569,7 +569,6 @@ public final class Analyser {
         inFunction=true;
         if (functionList.get(token.getValueString())!=null)
             throw new AnalyzeError(ErrorCode.DuplicateDeclaration, token.getStartPos());
-
         symbolTable = new ArrayList<>();
         symbolTable.add(new BlockSymbol());
         l=0;
@@ -585,20 +584,14 @@ public final class Analyser {
         if (type!=Type.VOID){
             symbolTable.get(0).addAllOffset();
         }
-
         functionList.put(token.getValueString(),new FuncInfo(functionID,paraCnt,type));//添加函数到函数表
         functionID++;
-
         analyseBlock_stmt();
-
         if (functionList.get(token.getValueString()).returnType==Type.VOID){
             instructions.add(new Instruction(Operation.ret));
         }
         functionList.get(token.getValueString()).localParaCount=localParaCount;
         functionList.get(token.getValueString()).bodyCount=instructions.size();
-
-
-
         FuncOutput funcOutput = new FuncOutput(functionList.get(token.getValueString()),instructions);
         funcOutputs.add(funcOutput);
 
