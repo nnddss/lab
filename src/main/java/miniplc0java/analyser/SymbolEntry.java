@@ -1,5 +1,12 @@
 package miniplc0java.analyser;
 
+import miniplc0java.instruction.Instruction;
+import miniplc0java.tokenizer.TokenType;
+import miniplc0java.util.Pos;
+
+import java.util.ArrayList;
+import java.util.List;
+
 public class SymbolEntry implements Comparable<SymbolEntry>{
     int len = 8;
     boolean isConstant;
@@ -8,6 +15,24 @@ public class SymbolEntry implements Comparable<SymbolEntry>{
     Type type;
     boolean isStr=false;//表示是否为字符串
     String string;//上个变量为true时存字符串内容
+
+
+    boolean isFunction=false;
+    boolean isGlobal;
+
+    TokenType tokenType;
+    Pos pos;
+    int parameterCount;
+    String name;
+    List<String> parameterList= new ArrayList<>();
+    double doubleValue;
+    long  uintValue;
+    String stringValue;
+    int number;//对于函数需要知道它在全局变量中的位置
+    int localParameterNum;
+    int instructionNum;
+    int length;
+    List<Instruction> instructionList=new ArrayList<>();
 
     /**
      * @param isConstant

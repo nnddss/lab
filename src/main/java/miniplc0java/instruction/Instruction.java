@@ -10,6 +10,8 @@ public class Instruction {
     boolean push_flag = false;
     boolean is_long=false;
     long long_x;
+    public int intValue;
+    public long longValue;
 
     public Instruction(Operation opt) {
         this.opt = opt;
