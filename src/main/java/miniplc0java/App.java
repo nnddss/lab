@@ -102,6 +102,7 @@ public class App {
                 analyzer.analyse();
                 if (Analyser.o != 0) {
                     output.write(analyzer.b);
+                    System.exit(0);
                 }
             } catch (Exception e) {
                 System.err.println(e);
