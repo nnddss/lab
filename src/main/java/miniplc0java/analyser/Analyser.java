@@ -97,8 +97,16 @@ public final class Analyser {
     }
     public byte[] hexToByte(String s) {
         int l=s.length();
+        String s1;
         s.replace(" ","");
         s.replace("\n","");
+        if(l%2==1){
+            s1=s+"0";
+            s=s1;
+            l++;
+        }
+
+
         b = new byte[s.length() / 2+100];
         for(int i=0;i<l;i=i+2){
             int k1=0;
