@@ -20,13 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 public final class Analyser {
-    public static int o = 0;
-    Tokenizer tokenizer;
-    List<HashMap<String, SymbolEntry>> symbolTableList;
-    ArrayList<Instruction> instructions;
-    static ArrayList<BlockSymbol> symbolTable = new ArrayList<>();
-    int l = -1;
-    static HashMap<String, FuncInfo> functionList = new HashMap<>();
+
     int functionID = 0;
     int localParaCount;
     int start = 0;
@@ -35,6 +29,13 @@ public final class Analyser {
     //所以在进入function时创建局部符号表并且将该值置为true，
     //这样在进入block时不在创建局部符号表，
     //并将其置为false
+    public static int o = 0;
+    Tokenizer tokenizer;
+    List<HashMap<String, SymbolEntry>> symbolTableList;
+    ArrayList<Instruction> instructions;
+    static ArrayList<BlockSymbol> symbolTable = new ArrayList<>();
+    int l = -1;
+    static HashMap<String, FuncInfo> functionList = new HashMap<>();
     public byte[] b;
     int IdentNum = 0, FunctionNum = 0;
     boolean Neg = false;
@@ -97,7 +98,8 @@ public final class Analyser {
     public byte[] hexToByte(String s) {
         int l=s.length();
         s.replace("\n","");
-        for(int i=0;i<l;i=i+2){
+        b = new byte[s.length() / 2];
+        for(int i=0;i+2<l;i=i+2){
             int k1=0;
             int k2=0;
             String string=s.substring(i,i+2);

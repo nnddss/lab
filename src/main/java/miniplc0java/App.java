@@ -88,7 +88,7 @@ public class App {
             } catch (Exception e) {
                 // 遇到错误不输出，直接退出
                 System.err.println(e);
-                System.exit(0);
+                System.exit(1);
                 return;
             }
             for (Token token : tokens) {
@@ -110,11 +110,11 @@ public class App {
                 return;
             }
             try {
-                output.write(hexStringToBytes("72303b3e"));
-                output.write(hexStringToBytes("00000001"));
-                output.write(hexStringToBytes(String.format("%08x", Analyser.globalSymbol.getSize())));
-                output.write(hexStringToBytes(Analyser.globalSymbol.output()));
-                output.write(hexStringToBytes(Analyser.printFuncOutputs()));
+                output.write(analyzer.hexToByte("72303b3e"));
+                output.write(analyzer.hexToByte("00000001"));
+                output.write(analyzer.hexToByte(String.format("%08x", Analyser.globalSymbol.getSize())));
+                output.write(analyzer.hexToByte(Analyser.globalSymbol.output()));
+                output.write(analyzer.hexToByte(Analyser.printFuncOutputs()));
             } catch (Exception e) {
 
             }
