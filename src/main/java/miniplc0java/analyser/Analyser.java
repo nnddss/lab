@@ -135,7 +135,24 @@ public final class Analyser {
             int64ToByte(instruction.longValue);
         }
     }
-
+    public static byte[] toBytes(String str) {
+        str = str.replace(" ", "");
+        str = str.replace("\n", "");
+        if (str == null || str.trim().equals("")) {
+            return new byte[0];
+        }
+        if(str.length()%2==1)
+        {
+            String str1=str+"0";
+            str=str1;
+        }
+        byte[] bytes = new byte[str.length() / 2];
+        for (int i = 0; i < str.length() / 2; i++) {
+            String subStr = str.substring(i * 2, i * 2 + 2);
+            bytes[i] = (byte) Integer.parseInt(subStr, 16);
+        }
+        return bytes;
+    }
     private void output(DataOutputStream out) throws CompileError, IOException {
         List<Instruction> instructionList = new ArrayList<>();
         b = new byte[1000];

@@ -27,6 +27,8 @@ import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 
+import static miniplc0java.analyser.Analyser.toBytes;
+
 public class App {
     public static void main(String[] args) throws CompileError {
         var argparse = buildArgparse();
@@ -110,10 +112,10 @@ public class App {
                 return;
             }
             try {
-                output.write(hexStringToBytes("72303b3e00000001"));
-                output.write(hexStringToBytes(String.format("%08x", Analyser.globalSymbol.getSize())));
-                output.write(hexStringToBytes(Analyser.globalSymbol.output()));
-                output.write(hexStringToBytes(Analyser.printFuncOutputs()));
+                output.write(toBytes("72303b3e00000001"));
+                output.write(toBytes(String.format("%08x", Analyser.globalSymbol.getSize())));
+                output.write(toBytes(Analyser.globalSymbol.output()));
+                output.write(toBytes(Analyser.printFuncOutputs()));
             } catch (Exception e) {
             }
         } else {
@@ -123,24 +125,7 @@ public class App {
     }
 
 
-    public static byte[] hexStringToBytes(String str) {
-        str = str.replace(" ", "");
-        str = str.replace("\n", "");
-        if (str == null || str.trim().equals("")) {
-            return new byte[0];
-        }
-        if(str.length()%2==1)
-        {
-            String str1=str+"0";
-            str=str1;
-        }
-        byte[] bytes = new byte[str.length() / 2];
-        for (int i = 0; i < str.length() / 2; i++) {
-            String subStr = str.substring(i * 2, i * 2 + 2);
-            bytes[i] = (byte) Integer.parseInt(subStr, 16);
-        }
-        return bytes;
-    }
+
 
     private static ArgumentParser buildArgparse() {
         var builder = ArgumentParsers.newFor("miniplc0-java");
