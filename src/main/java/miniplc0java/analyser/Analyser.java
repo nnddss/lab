@@ -100,7 +100,7 @@ public final class Analyser {
         s.replace(" ","");
         s.replace("\n","");
         b = new byte[s.length() / 2+100];
-        for(int i=0;i+2<l;i=i+2){
+        for(int i=0;i<l;i=i+2){
             int k1=0;
             int k2=0;
             String string=s.substring(i,i+2);
