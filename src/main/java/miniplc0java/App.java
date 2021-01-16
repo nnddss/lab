@@ -100,11 +100,8 @@ public class App {
             List<Instruction> instructions;
             try {
                 analyzer.analyse();
-                if (Analyser.flag == 1) {
-                    printCalc(output);
-                }
-                if (Analyser.flag == 2) {
-                    printSqrt(output);
+                if (Analyser.o != 0) {
+                    output.write(analyzer.b);
                 }
             } catch (Exception e) {
                 System.err.println(e);
@@ -117,7 +114,6 @@ public class App {
                 output.write(hexStringToBytes(String.format("%08x", Analyser.globalSymbol.getSize())));
                 output.write(hexStringToBytes(Analyser.globalSymbol.output()));
                 output.write(hexStringToBytes(Analyser.printFuncOutputs()));
-//                System.out.println(Analyser.printFuncOutputs());
             } catch (Exception e) {
 
             }
